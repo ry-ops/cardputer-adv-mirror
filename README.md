@@ -11,6 +11,17 @@ CardputerMirror.update();   // loop()   — budgeted scan, pushes changed tiles
 
 Browse to the IP printed on the device screen.
 
+![Cardputer ADV on-device screen](docs/images/screen.png)
+
+![Browser on-screen keyboard](docs/images/keyboard.png)
+
+The browser page renders the mirrored display alongside a full on-screen
+keyboard matching the ADV's physical 4x14 layout — click keys directly to send
+them to the device. Prefer typing on your own keyboard? Click **Capture my
+keyboard** to toggle passthrough: real keypresses (including arrow keys) are
+mapped through the same matrix coordinates a physical press would use, so the
+firmware can't tell the difference.
+
 ## Why this order (#2 -> #1 -> #4)
 
 The frame source sits behind `IFrameSource`. Swapping ADR 0002's
