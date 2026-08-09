@@ -104,3 +104,30 @@ src/main.cpp         Example integration
 ```bash
 c++ -std=c++17 -O2 -o verify_codec tools/verify_codec.cpp && ./verify_codec
 ```
+
+## Test suite
+
+```bash
+for t in tools/test_*.mjs tools/test_*.cjs; do echo "--- $t"; node "$t"; done
+```
+
+| test | what it proves |
+|---|---|
+| `test_keymap.mjs`       | every coordinate agrees with M5Cardputer's `_key_value_map[4][14]` |
+| `test_coverage.mjs`     | every enumerated key is reachable from some painted legend |
+| `test_dual_legend.mjs`  | dual-legend caps emit both characters from one coordinate |
+| `test_dom_keyboard.cjs` | the page **the device serves** builds the keyboard measured in ADR 0022 |
+
+`test_dom_keyboard.cjs` needs jsdom (`npm install --no-save jsdom`); without it
+the test prints SKIP and exits 0 rather than failing.
+
+It gunzips `lib/CardputerMirror/WebAssets.h` rather than reading
+`web/index.html`, because the latter is a **template** holding the literal
+`/*__KEYMAP__*/` placeholder — opened directly it renders a "keymap missing"
+notice and every count assertion reads 0. See ADR 0025.
+
+Regenerate assets after editing `web/index.html`:
+
+```bash
+python3 tools/gen_web_assets.py && ./tools/pio.sh run -e cardputer-adv
+```

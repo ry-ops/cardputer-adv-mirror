@@ -22,6 +22,65 @@
 
 static const wifimgr::Profile kWifiProfiles[] = { WIFI_PROFILES };
 
+/*
+ * Placeholder guard.
+ *
+ * wifi_credentials.h is gitignored, so it gets replaced by hand -- and once it
+ * was swapped for a fully REDACTED copy. That built and flashed cleanly, then
+ * failed at runtime as an ordinary "no profile joined" SoftAP fallback, which
+ * is indistinguishable from a sleeping hotspot or a 5 GHz-only network. The
+ * build is the only place this is cheap to catch.
+ *
+ * constexpr, so a placeholder is a COMPILE error, not a debugging session.
+ * strcmp is not constexpr; compare bytes directly.
+ */
+/*
+ * cstarts = "does needle occur at exactly this position", which is what a
+ * substring search needs. My first version used full-string EQUALITY here, so
+ * cfind could only fire when the whole value equalled the needle -- a
+ * placeholder like "PUT_ROTATED_PASSPHRASE_HERE" (needle "PUT_ROTATED") slipped
+ * straight through and the build passed. The guard silently did nothing, which
+ * is worse than not having one.
+ */
+static constexpr bool cstarts(const char* h, const char* n)
+{
+    return *n == '\0' ? true
+         : (*h != *n ? false : cstarts(h + 1, n + 1));
+}
+static constexpr bool cfind(const char* h, const char* n)
+{
+    return cstarts(h, n) ? true : (*h == '\0' ? false : cfind(h + 1, n));
+}
+static constexpr bool isPlaceholder(const char* s)
+{
+    return cfind(s, "REDACTED") || cfind(s, "PUT_ROTATED")
+        || cfind(s, "your-network") || cfind(s, "your-password")
+        || cfind(s, "backup-network") || cfind(s, "backup-password");
+}
+/*
+ * Check the MACRO's string literals, not kWifiProfiles: that array is `const`,
+ * not `constexpr`, so its members are not readable in a constant expression
+ * (making it constexpr would change the type the wifimgr API takes). Expanding
+ * WIFI_PROFILES inside a constexpr aggregate gives the same literals with no
+ * signature change.
+ */
+namespace credcheck {
+    struct P { const char* ssid; const char* password; };
+    static constexpr P kAll[] = { WIFI_PROFILES };
+    static constexpr size_t kN = sizeof(kAll) / sizeof(kAll[0]);
+    static constexpr bool anyPlaceholder(size_t i = 0)
+    {
+        return i >= kN ? false
+             : (isPlaceholder(kAll[i].ssid) || isPlaceholder(kAll[i].password)
+                ? true : anyPlaceholder(i + 1));
+    }
+}
+static_assert(!credcheck::anyPlaceholder(),
+    "wifi_credentials.h still holds a REDACTED/PUT_ROTATED/example placeholder. "
+    "Put the real SSID and passphrase in include/wifi_credentials.h -- spell the "
+    "SSID as the AP BROADCASTS it (see the header comment) -- or delete the "
+    "unused profile line.");
+
 // mDNS/DHCP name. The hotspot's leases are dynamic, so this is the stable
 // way to reach the mirror: http://cardputer.local
 static constexpr const char* kHostname = "cardputer";

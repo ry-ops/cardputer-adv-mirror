@@ -54,8 +54,20 @@
  * is what actually selects open association. Do not use a placeholder string.
  */
 #define WIFI_PROFILES                    \
-    { "REDACTED_SSID_1", "" }, \
-    { "REDACTED_SSID_2", "REDACTED_PASSWORD" },       \
+    { "MDC(IoT)", "" }, \
+
+/*
+ * The RY-OPS iPhone-hotspot fallback was removed: we are on the open network
+ * now, so no passphrase is stored here at all. To restore it, add
+ *
+ *     { "RY-OPS", "<passphrase>" },       \
+ *
+ * as a SECOND line inside the macro above, keeping the trailing backslash on
+ * every line but making sure the entry itself is spelled as the AP BROADCASTS
+ * it (uppercase RY-OPS -- see the band/spelling notes at the top of this file).
+ * Do not write the entry as a // comment inside the macro; line splicing runs
+ * before comment removal and would swallow the following line.
+ */
 
 // SoftAP fallback, used when no profile connects.
 #define WIFI_AP_SSID "CardputerADV"
