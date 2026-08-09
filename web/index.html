@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Cardputer ADV Mirror</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--line:#30363d;--fg:#c9d1d9;--dim:#8b949e;--ok:#3fb950;--warn:#d29922;--err:#f85149;--accent:#58a6ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px}
+h1{font-size:15px;font-weight:600;margin:0;letter-spacing:.02em}
+.sub{color:var(--dim);font-size:11px;margin-top:-10px}
+#shell{background:#1c2128;border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:0 8px 28px #0009}
+canvas{display:block;image-rendering:pixelated;background:#000;border-radius:3px}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:760px}
+button,select{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button.on{border-color:var(--ok);color:var(--ok)}
+.stat{display:flex;gap:14px;color:var(--dim);font-size:11px;flex-wrap:wrap;justify-content:center}
+.stat b{color:var(--fg);font-weight:600}
+#dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--err);vertical-align:middle;margin-right:5px}
+#dot.up{background:var(--ok)}
+#kb{display:inline-flex;flex-direction:column;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;width:max-content;max-width:100%}
+.krow{display:grid;grid-template-columns:repeat(14,var(--ku,34px));gap:4px}
+.key{position:relative;width:var(--ku,34px);height:var(--ku,34px);padding:0;display:flex;align-items:center;justify-content:center;background:#21262d;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--fg);cursor:pointer;user-select:none;box-sizing:border-box}
+.key .sec{position:absolute;top:1px;right:3px;font-size:calc(var(--ku,34px)*0.21);line-height:1;color:var(--dim);cursor:pointer}
+.key .sec:hover{color:var(--ok)}
+.key .pri{font-size:calc(var(--ku,34px)*0.30);line-height:1}
+.key .cap{position:absolute;left:3px;bottom:1px;font-size:calc(var(--ku,34px)*0.24);line-height:1;color:var(--ok)}
+.key:active,.key.dn{background:var(--accent);color:#0d1117;border-color:var(--accent)}
+.key.lbl .pri{letter-spacing:-.3px;white-space:nowrap;max-width:100%;overflow:hidden}
+.key.l2 .pri{font-size:calc(var(--ku,34px)*0.26)}
+.key.l3 .pri{font-size:calc(var(--ku,34px)*0.20)}
+.key.l5 .pri{font-size:calc(var(--ku,34px)*0.145)}
+.key.wide{grid-column:span 1}.key.mod{color:var(--warn)}
+.key.mod.on{background:var(--warn);color:#0d1117;border-color:var(--warn)}
+.key.hit{border-color:var(--ok)}
+.key.arrow{color:var(--ok);font-weight:600}
+.ar{color:var(--ok);font-weight:600}
+#klog{margin:0;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;font:11px/1.6 ui-monospace,Menlo,monospace;color:var(--dim);min-height:20px;min-width:260px;white-space:pre}
+.note{max-width:760px;color:var(--dim);font-size:11px;border-left:2px solid var(--line);padding-left:10px}
+.note code{color:var(--accent)}
+#sd{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;max-width:760px;width:100%}
+#sd h2{font-size:12px;font-weight:600;margin:0 0 8px;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+#sdstate{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--line);color:var(--dim)}
+#sdstate.mounted{color:var(--ok);border-color:var(--ok)}
+#sdstate.unformatted,#sdstate.formatting{color:var(--warn);border-color:var(--warn)}
+#sdstate.error,#sdstate.absent{color:var(--err);border-color:var(--err)}
+.sdgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px 14px;font-size:11px;color:var(--dim);margin-bottom:10px}
+.sdgrid b{display:block;color:var(--fg);font-size:12px;font-weight:600}
+#sdbar{height:6px;background:#21262d;border-radius:3px;overflow:hidden;margin-bottom:10px}
+#sdfill{height:100%;width:0;background:var(--accent);transition:width .3s}
+#sdfill.warn{background:var(--warn)}
+#sddetail{font-size:11px;color:var(--dim);margin-bottom:10px;min-height:16px}
+#fmt{border-color:var(--err);color:var(--err)}
+#fmt:hover{background:var(--err);color:#0d1117}
+#fmt:disabled{opacity:.4;cursor:not-allowed;background:var(--panel);color:var(--err)}
+</style></head><body>
+<h1>M5Stack Cardputer ADV — Display Mirror</h1>
+<div class="sub">ADR 0002 · GRAM readback · 240×135 RGB565</div>
+<div id="shell"><canvas id="c" width="240" height="135"></canvas></div>
+<div class="bar">
+  <span><span id="dot"></span><span id="conn">connecting…</span></span>
+  <select id="zoom"><option value="2">2×</option><option value="3" selected>3×</option><option value="4">4×</option><option value="5">5×</option></select>
+  <button id="full">Full refresh</button>
+  <button id="swap">Swap R/B</button>
+  <button id="inv">Invert</button>
+  <button id="shot">Save PNG</button>
+  <select id="budget">
+    <option value="2000">Gentle (2ms)</option>
+    <option value="4500" selected>Normal (4.5ms)</option>
+    <option value="9000">Fast (9ms)</option>
+    <option value="20000">Aggressive (20ms)</option>
+  </select>
+</div>
+<div class="stat">
+  <span>fps <b id="fps">0</b></span><span>tiles/s <b id="tps">0</b></span>
+  <span>KiB/s <b id="kbs">0</b></span><span>self-test <b id="st">—</b></span>
+  <span>tiles <b id="tot">0</b></span>
+</div>
+<div class="bar">
+  <button id="hwkb">Capture my keyboard</button>
+  <button id="sweep">Test all 56 keys</button>
+  <span style="color:var(--dim);font-size:11px">mods <b id="modstate">none</b></span>
+  <span style="color:var(--dim);font-size:11px">sent <b id="ksent">0</b></span>
+  <span style="color:var(--dim);font-size:11px">coverage <b id="kcov">0/56</b></span>
+</div>
+<pre id="klog"></pre>
+<div id="kb"></div>
+<div id="sd">
+  <h2>SD Card <span id="sdstate">checking…</span></h2>
+  <div class="sdgrid">
+    <span>card<b id="sdname">—</b></span>
+    <span>filesystem<b id="sdfs">—</b></span>
+    <span>capacity<b id="sdcap">—</b></span>
+    <span>used<b id="sdused">—</b></span>
+    <span>free<b id="sdfree">—</b></span>
+    <span>bus speed<b id="sdspd">—</b></span>
+  </div>
+  <div id="sdbar"><div id="sdfill"></div></div>
+  <div id="sddetail">—</div>
+  <div class="bar" style="justify-content:flex-start">
+    <button id="sdref">Refresh</button>
+    <button id="sdmnt">Mount</button>
+    <button id="sdumnt">Unmount</button>
+    <select id="sdfmt"><option value="1" selected>FAT32</option><option value="0">Auto (FAT16/32)</option></select>
+    <select id="sdau"><option value="0" selected>Auto cluster</option><option value="4096">4 KB</option><option value="16384">16 KB</option><option value="32768">32 KB</option></select>
+    <button id="fmt">Format — erases card</button>
+  </div>
+</div>
+<div class="note">
+  <b>Keyboard is live.</b> The 4×14 layout is generated from M5Cardputer's own
+  <code>_key_value_map</code>, so it cannot drift from the hardware. Clicking a key sends its
+  <i>matrix coordinate</i> — the firmware decodes it through the same table a physical
+  press uses. Hover a key to see its row/column.<br>
+  <b>Every cap shows both legends.</b> The small dim symbol above each key is the
+  shifted character — click it directly to send that symbol; no need to latch
+  <code>shift</code> first. All 56 keys and 107 legends are reachable, and the
+  layout scales to fit all 14 columns at any panel width.<br>
+  <b>Arrows:</b> the ADV has four <i>dedicated</i> arrow keys — an inverted-T,
+  marked <span class="ar">↑</span> <span class="ar">←</span> <span class="ar">↓</span>
+  <span class="ar">→</span> above. No <code>fn</code> is needed: press them directly,
+  or use <code>Capture my keyboard</code> and press real arrow keys.
+  They report as <code>;</code> <code>,</code> <code>.</code> <code>/</code> because
+  M5Cardputer reuses the original Cardputer's value map — the keycap legend and the
+  reported character differ, which is a library detail, not a missing key.<br>
+  If colors look wrong, try <code>Swap R/B</code> or <code>Invert</code>: the panel is
+  read back as RGB888 and byte order varies between ST7789 revisions. A self-test
+  well under 100% means 3-wire GRAM readback is unreliable on this unit — see ADR 0001.
+</div>
+<script>
+const cv=document.getElementById('c'),cx=cv.getContext('2d',{willReadFrequently:true});
+cx.imageSmoothingEnabled=false;
+let W=240,H=135,TW=60,TH=45,COLS=4;
+let img=cx.createImageData(TW,TH);
+const $=i=>document.getElementById(i);
+function zoom(){const z=+$('zoom').value;cv.style.width=(W*z)+'px';cv.style.height=(H*z)+'px';}
+$('zoom').onchange=zoom;zoom();
+cx.fillStyle='#000';cx.fillRect(0,0,W,H);
+
+let tiles=0,bytes=0,frames=0,total=0;
+setInterval(()=>{
+  $('fps').textContent=frames;$('tps').textContent=tiles;
+  $('kbs').textContent=(bytes/1024).toFixed(1);$('tot').textContent=total;
+  tiles=0;bytes=0;frames=0;
+},1000);
+
+// RGB565 -> RGBA. Matches Codec.h exactly: little-endian, 5/6/5, replicated
+// high bits so 0x1F -> 0xFF rather than 0xF8.
+function put(idx,px){
+  const d=img.data;
+  for(let i=0;i<TW*TH;i++){
+    const v=px[i],r=(v>>11)&0x1F,g=(v>>5)&0x3F,b=v&0x1F,o=i<<2;
+    d[o]=(r<<3)|(r>>2); d[o+1]=(g<<2)|(g>>4); d[o+2]=(b<<3)|(b>>2); d[o+3]=255;
+  }
+  cx.putImageData(img,(idx%COLS)*TW,Math.floor(idx/COLS)*TH);
+}
+function decode(buf){
+  const dv=new DataView(buf);
+  if(dv.getUint8(0)!==0x54)return;              // 'T'
+  const idx=dv.getUint8(1),enc=dv.getUint8(4),cnt=dv.getUint8(5)|(dv.getUint8(6)<<8);
+  const px=new Uint16Array(TW*TH);let o=7;
+  if(enc===0x00){ for(let i=0;i<cnt;i++){px[i]=dv.getUint8(o)|(dv.getUint8(o+1)<<8);o+=2;} }
+  else if(enc===0x01){ let p=0;
+    for(let i=0;i<cnt;i++){ const v=dv.getUint8(o)|(dv.getUint8(o+1)<<8),rl=dv.getUint8(o+2);o+=3;
+      for(let k=0;k<rl;k++)px[p++]=v; } }
+  else return;
+  put(idx,px);tiles++;total++;if(idx===0)frames++;
+}
+let ws;
+function connect(){
+  ws=new WebSocket(`ws://${location.host}/ws`);
+  ws.binaryType='arraybuffer';
+  ws.onopen =()=>{$('dot').className='up';$('conn').textContent='connected';};
+  ws.onclose=()=>{$('dot').className='';$('conn').textContent='reconnecting…';setTimeout(connect,1200);};
+  ws.onmessage=e=>{
+    if(typeof e.data==='string'){
+      const m=JSON.parse(e.data);
+      if(m.t==='hello'){
+        W=m.w;H=m.h;TW=m.tw;TH=m.th;COLS=m.cols;
+        cv.width=W;cv.height=H;img=cx.createImageData(TW,TH);zoom();
+        const s=m.selftest;$('st').textContent=s<0?'n/a':s+'%';
+        $('st').style.color=s>=95?'var(--ok)':s>=60?'var(--warn)':'var(--err)';
+      }
+      return;
+    }
+    bytes+=e.data.byteLength;decode(e.data);
+  };
+}
+connect();
+const send=o=>ws&&ws.readyState===1&&ws.send(JSON.stringify(o));
+$('full').onclick=()=>send({full:true});
+$('budget').onchange=e=>send({budget:+e.target.value});
+let sw=false,iv=false;
+$('swap').onclick=e=>{sw=!sw;e.target.classList.toggle('on',sw);send({swaprb:sw});};
+$('inv').onclick =e=>{iv=!iv;e.target.classList.toggle('on',iv);send({invert:iv});};
+$('shot').onclick=()=>{
+  const o=document.createElement('canvas');o.width=W*4;o.height=H*4;
+  const g=o.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(cv,0,0,o.width,o.height);
+  const a=document.createElement('a');a.download='cardputer-adv.png';a.href=o.toDataURL();a.click();
+};
+
+/* ---------------- ADV keyboard: layout + input injection ----------------
+ * KEYMAP is GENERATED from the vendor header (tools/gen_keymap.py parses
+ * _key_value_map[4][14] out of M5Cardputer's Keyboard.h) and inlined here by
+ * gen_web_assets.py. It is deliberately not hand-written: the previous version
+ * of this block was transcribed by hand from a photo and carried HID codes that
+ * had no relationship to what the firmware actually reads.
+ *
+ * We send hardware MATRIX COORDINATES {r,c}, not characters. The firmware runs
+ * them through the same _key_value_map a physical press uses, so a remote press
+ * and a real press are indistinguishable downstream -- there is no second input
+ * path that can disagree with the first.
+ */
+/*__KEYMAP__*/
+const kb=$('kb');
+const mods={shift:false,fn:false,ctrl:false,alt:false,opt:false};
+let keysSent=0;
+
+function sendKey(k, forceShift){
+  // Modifier keys latch locally instead of being transmitted: the firmware
+  // needs them as FLAGS accompanying a key, which is how the hardware reports
+  // them too (KeysState.shift/.fn alongside the character).
+  if(k.mod){
+    mods[k.mod]=!mods[k.mod];
+    renderMods();
+    return;
+  }
+  // forceShift: the user clicked the UPPER legend on the cap, which means that
+  // symbol specifically -- regardless of the latch state. The device still
+  // receives a coordinate plus a shift flag, exactly as a physical press does.
+  const sh = forceShift || mods.shift;
+  send({t:'key',r:k.r,c:k.c,shift:sh,fn:mods.fn});
+  noteSent(k.r,k.c,sh?k.hi:k.lo,sh,mods.fn);
+  // Shift and fn are one-shot, matching how you'd physically chord them.
+  if(mods.shift||mods.fn){mods.shift=false;mods.fn=false;renderMods()}
+}
+
+// Size the key unit so all 14 columns fit the panel. Row 3 is the widest: 13
+// single units + a double-width space bar + 13 gaps. Solving for the unit rather
+// than hardcoding one is what GUARANTEES no key is clipped off the right edge --
+// the previous fixed 30px key made that row 604px wide in an unwrapped flex
+// container, so its tail simply overflowed out of view.
+function fitKeyboard(){
+  const kb=$('kb'); if(!kb) return;
+  // Measure the AVAILABLE space, not the keyboard: #kb is a shrink-to-fit flex
+  // item, so its own clientWidth is a function of the unit we are computing --
+  // a feedback loop that latched at the minimum and collapsed the layout to one
+  // column. The viewport (minus body padding and the panel's own border/padding)
+  // is the independent quantity.
+  const room = (document.documentElement.clientWidth || 900) - 32;
+  const avail = Math.max(300, room) - 22;
+  // Every row is now a uniform 14-column grid (the ADV's caps are all one size,
+  // including space), so the widest row is exactly 14 units + 13 gaps.
+  const GAP=4, UNITS=14, GAPS=13;
+  const unit = Math.floor((avail - GAP*GAPS) / UNITS);
+  kb.style.setProperty('--ku', Math.max(18, Math.min(44, unit))+'px');
+}
+addEventListener('resize', fitKeyboard);
+
+// Browser-side coverage. The device tracks the same thing; comparing the two
+// numbers is what separates "browser never sent it" from "device never got it".
+const sentMask=new Set();
+function noteSent(r,c,label,shift,fn){
+  keysSent++; $('ksent').textContent=keysSent;
+  sentMask.add(r+','+c);
+  $('kcov').textContent=sentMask.size+'/56';
+  const line=`r${r} c${c} ${label}${shift?' +sh':''}${fn?' +fn':''}`;
+  const log=$('klog');
+  log.textContent=(line+'\n'+log.textContent).split('\n').slice(0,6).join('\n');
+  const el=document.querySelector(`.key[data-rc="${r},${c}"]`);
+  if(el) el.classList.add('hit');
+}
+
+function renderMods(){
+  document.querySelectorAll('.key.mod').forEach(el=>{
+    const m=el.dataset.mod;
+    el.classList.toggle('on', !!mods[m]);
+  });
+  $('modstate').textContent =
+    Object.entries(mods).filter(([,v])=>v).map(([k])=>k).join('+') || 'none';
+}
+
+if(!window.KEYMAP){
+  kb.innerHTML='<div style="color:var(--err);font-size:11px">'+
+    'keymap.js not inlined — run tools/gen_keymap.py then tools/gen_web_assets.py</div>';
+}else{
+ window.KEYMAP.forEach(row=>{
+  const d=document.createElement('div');d.className='krow';
+  row.forEach(k=>{
+    // The vendor map stores ' ' at row 3 col 13 only; the physical space bar is
+    // wider than one unit. Widen it in CSS rather than inventing a 15th column,
+    // so the coordinates stay truthful.
+    const isSpace = (k.r===3 && k.c===13);
+    const el=document.createElement('div');
+    // Font size follows the LABEL LENGTH, since that is what determines whether
+    // the text fits the cap. Keying it on "is this a modifier" let 'enter',
+    // 'tab' and 'del' render at full size and overflow.
+    const lbl = isSpace ? 'space' : k.lo;
+    const lenCls = lbl.length>4 ? ' lbl l5' : lbl.length>2 ? ' lbl l3'
+                 : lbl.length>1 ? ' lbl l2' : '';
+    el.className='key'+(k.mod?' mod':'')+(isSpace?' wide':'')+(k.cap?' arrow':'')+lenCls;
+    el.dataset.lo=k.lo; el.dataset.hi=k.hi;
+    el.dataset.rc=k.r+','+k.c;
+    if(k.mod) el.dataset.mod=k.mod;
+
+    // A physical ADV keycap carries BOTH legends -- '1' and '!', ';' and ':'.
+    // Rendering only one made 47 symbols unreachable and invisible, and the
+    // arrow legend previously REPLACED the ';' it shares a cap with, so the
+    // semicolon looked like a missing key. Print every legend the cap prints,
+    // and make each one its own click target.
+    if(k.mod || isSpace){
+      const c=document.createElement('span'); c.className='pri';
+      c.textContent = isSpace ? 'space' : k.lo;
+      el.appendChild(c);
+    }else{
+      if(k.hi!==k.lo){
+        const hi=document.createElement('span'); hi.className='sec';
+        hi.textContent=k.hi;
+        // Clicking the upper legend sends the key WITH shift, so a symbol is
+        // reachable in one click instead of requiring the shift latch first.
+        hi.onpointerdown=e=>{e.preventDefault();e.stopPropagation();
+          el.classList.add('dn'); sendKey(k, true);};
+        hi.onpointerup=()=>el.classList.remove('dn');
+        el.appendChild(hi);
+      }
+      const lo=document.createElement('span'); lo.className='pri';
+      lo.textContent=k.lo;
+      el.appendChild(lo);
+      if(k.cap){
+        // The arrow is a THIRD legend on the same cap, not a replacement.
+        const ar=document.createElement('span'); ar.className='cap';
+        ar.textContent=k.cap; el.appendChild(ar);
+      }
+    }
+
+    el.title = `row ${k.r} col ${k.c}  ·  ${k.lo}` + (k.hi!==k.lo?` / ${k.hi}`:'')
+             + (k.cap?`  ·  arrow key (reports '${k.lo}')`:'');
+    el.onpointerdown=e=>{e.preventDefault();el.classList.add('dn');sendKey(k)};
+    el.onpointerup=el.onpointerleave=()=>el.classList.remove('dn');
+    d.appendChild(el);
+  });
+  kb.appendChild(d);
+ });
+ renderMods();
+ fitKeyboard();
+}
+
+/* Sweep: press all 56 keys in sequence.
+ * This is the answer to "there is no way to test the other keys". Pace it well
+ * under the firmware's queue depth (16) and drain rate (8 per loop pass) so the
+ * test measures the KEY PATH and not the queue's overflow behaviour -- a sweep
+ * that drops events would be indistinguishable from keys that do not work.
+ */
+$('sweep').onclick=async e=>{
+  if(!window.KEYMAP) return;
+  const btn=e.target; btn.disabled=true;
+  const keys=window.KEYMAP.flat();
+  for(const k of keys){
+    if(ws.readyState!==1) break;
+    send({t:'key',r:k.r,c:k.c,shift:false,fn:false});
+    noteSent(k.r,k.c,k.lo,false,false);
+    const el=document.querySelector(`.key[data-rc="${k.r},${k.c}"]`);
+    if(el){el.classList.add('dn');setTimeout(()=>el.classList.remove('dn'),90)}
+    await new Promise(r=>setTimeout(r,70));   // 14/s vs ~1000/s drain: 70x headroom
+  }
+  btn.disabled=false;
+  btn.textContent='Sweep done — check device coverage';
+};
+
+/* Physical keyboard -> matrix coordinate.
+ * Built by inverting KEYMAP, so it too follows the vendor header. Arrow keys
+ * are mapped to the fn-chords the ADV actually uses (fn+; . , /), which is the
+ * whole point of this exercise: a browser arrow key should reach the menu.
+ */
+const byChar={};
+if(window.KEYMAP) window.KEYMAP.forEach(r=>r.forEach(k=>{
+  if(!k.mod){
+    if(!(k.lo in byChar)) byChar[k.lo]={r:k.r,c:k.c,shift:false};
+    if(!(k.hi in byChar)) byChar[k.hi]={r:k.r,c:k.c,shift:true};
+  }
+}));
+const ARROW={ArrowUp:';',ArrowDown:'.',ArrowLeft:',',ArrowRight:'/'};
+
+// Control keys are stored in KEYMAP by LABEL ('enter','del','tab'), not as
+// characters, so byChar cannot find them. Look them up by label rather than
+// hardcoding coordinates -- a hardcoded {r:2,c:13} would be right today and
+// silently wrong the moment the vendor moves a key.
+const byLabel={};
+if(window.KEYMAP) window.KEYMAP.forEach(r=>r.forEach(k=>{byLabel[k.lo]={r:k.r,c:k.c,shift:false}}));
+let hwCapture=false;
+$('hwkb').onclick=e=>{
+  hwCapture=!hwCapture;
+  e.target.classList.toggle('on',hwCapture);
+  e.target.textContent = hwCapture?'Capturing keys — click to stop':'Capture my keyboard';
+};
+addEventListener('keydown',e=>{
+  if(!hwCapture) return;
+  let spec=null, fn=false;
+  // The ADV's arrow keys are DEDICATED keys, silkscreened with arrows, that
+  // report as ; , . / -- an inverted-T at (2,11)/(3,10)/(3,11)/(3,12). They are
+  // NOT an fn chord. Sending fn=true here fabricated a modifier the hardware
+  // never sets for these keys, and firmware that keys on fn would have rejected
+  // every remote arrow press while physical presses worked.
+  if(e.key in ARROW){ spec=byChar[ARROW[e.key]]; }
+  else if(e.key==='Enter')     spec=byLabel['enter'];
+  else if(e.key==='Backspace') spec=byLabel['del'];
+  else if(e.key==='Tab')       spec=byLabel['tab'];
+  else if(e.key.length===1)    spec=byChar[e.key];
+  if(!spec) return;
+  e.preventDefault();
+  send({t:'key',r:spec.r,c:spec.c,shift:spec.shift,fn:fn});
+  const kk=window.KEYMAP[spec.r][spec.c];
+  noteSent(spec.r,spec.c,spec.shift?kk.hi:kk.lo,spec.shift,fn);
+});
+
+/* ---------------- SD card panel ---------------- */
+const fmtB=b=>{b=Number(b)||0;if(b<1024)return b+' B';const u=['KB','MB','GB','TB'];let i=-1;do{b/=1024;i++}while(b>=1024&&i<3);return b.toFixed(b<10?1:0)+' '+u[i]};
+
+let sdPoll=null;
+function sdRender(d){
+  const st=$('sdstate');
+  st.textContent=d.state; st.className=d.state;
+  $('sdname').textContent = d.name||'—';
+  $('sdfs').textContent   = d.fs||'—';
+  $('sdcap').textContent  = d.capacity?fmtB(d.capacity):'—';
+  $('sdused').textContent = d.total?fmtB(d.used):'—';
+  $('sdfree').textContent = d.total?fmtB(d.free):'—';
+  $('sdspd').textContent  = d.speedKhz?(d.speedKhz/1000).toFixed(0)+' MHz':'—';
+  $('sddetail').textContent = d.detail||'';
+
+  const fill=$('sdfill');
+  if(d.state==='formatting'){ fill.className='warn'; fill.style.width=(d.progress||0)+'%'; }
+  else { fill.className=''; fill.style.width = d.total ? (100*d.used/d.total)+'%' : '0'; }
+
+  $('fmt').disabled = (d.state==='formatting'||d.state==='absent');
+
+  // While a format runs, poll fast so progress is visible; otherwise idle.
+  if(d.state==='formatting'){ if(!sdPoll) sdPoll=setInterval(sdStatus,700); }
+  else if(sdPoll){ clearInterval(sdPoll); sdPoll=null; }
+}
+async function sdStatus(){
+  try{ sdRender(await (await fetch('/api/sd/status')).json()); }
+  catch(e){ $('sddetail').textContent='status request failed: '+e; }
+}
+async function sdPost(path){
+  try{ sdRender(await (await fetch(path,{method:'POST'})).json()); }
+  catch(e){ $('sddetail').textContent='request failed: '+e; }
+}
+$('sdref').onclick =()=>sdStatus();
+$('sdmnt').onclick =()=>sdPost('/api/sd/mount');
+$('sdumnt').onclick=()=>sdPost('/api/sd/unmount');
+$('fmt').onclick=async()=>{
+  const fs=$('sdfmt').value==='1'?'FAT32':'auto-selected FAT';
+  // Two-step confirm: this is irreversible and the button sits next to
+  // harmless ones.
+  if(!confirm('Format the SD card as '+fs+'?\n\nEVERY FILE ON THE CARD WILL BE ERASED.\nThis cannot be undone.'))return;
+  if(prompt('Type FORMAT to confirm.')!=='FORMAT')return;
+  const q='?confirm=FORMAT&fat32='+$('sdfmt').value+'&au='+$('sdau').value;
+  try{
+    const r=await fetch('/api/sd/format'+q,{method:'POST'});
+    const d=await r.json();
+    if(!r.ok){ $('sddetail').textContent='refused: '+(d.error||r.status); return; }
+    sdRender(d);
+  }catch(e){ $('sddetail').textContent='format request failed: '+e; }
+};
+sdStatus();
+setInterval(()=>{ if(!sdPoll) sdStatus(); }, 5000);
+</script></body></html>

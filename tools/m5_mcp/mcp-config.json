@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "m5-dev": {
+      "command": "python3",
+      "args": [
+        "/Users/ryandahlberg/Projects/cardputer-adv-mirror/tools/m5_mcp/server.py"
+      ],
+      "env": {
+        "M5_PROJECT_DIR": "/Users/ryandahlberg/Projects/cardputer-adv-mirror",
+        "M5_BAUD": "115200"
+      }
+    }
+  }
+}
