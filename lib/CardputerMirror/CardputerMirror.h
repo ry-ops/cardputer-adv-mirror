@@ -109,6 +109,17 @@ public:
     using KeyFn = void (*)(uint8_t row, uint8_t col, bool shift, bool fn);
     void   onKey(KeyFn fn) { _onKey = fn; }
 
+    // Top-edge button sink. BtnG0 (GPIO 0) is the ONLY top button firmware can
+    // observe: M5Unified registers exactly one button for board_M5CardputerADV
+    // and reads it as (!gpio_in(GPIO_NUM_0)). BtnRst drives EN and cuts power to
+    // the SoC, so it is unobservable and unactuatable by definition -- it is not
+    // represented here rather than being faked.
+    //
+    // A GPIO is not a matrix coordinate, so this is a SEPARATE sink instead of a
+    // synthetic (row,col). Same task constraints as KeyFn: enqueue only.
+    using BtnFn = void (*)(uint8_t btn, uint16_t ms);
+    void   onBtn(BtnFn fn) { _onBtn = fn; }
+
 private:
     Config     _cfg;
     IFrameSource* _src = nullptr;
@@ -121,6 +132,7 @@ private:
     uint32_t   _framesSent = 0;
     bool       _ready = false;
     KeyFn      _onKey = nullptr;
+    BtnFn      _onBtn = nullptr;
 
     bool scanOneTile();             // returns true if the tile changed
     void publishTile(int idx);

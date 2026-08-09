@@ -160,6 +160,16 @@ bool Mirror::begin(const Config& cfg)
             // This runs on the AsyncTCP task, so it must only ENQUEUE. Touching
             // menu state or the panel here would race the loop task's own
             // drawing, which is why keyinject::post() is the only call made.
+            // Top-edge button: {"t":"btn","b":"g0","ms":80}
+            // Routed to its own sink, not through the key path -- see onBtn().
+            if (msg.indexOf("\"btn\"") >= 0 && _onBtn) {
+                const int mi = msg.indexOf("\"ms\":");
+                int ms = (mi >= 0) ? msg.substring(mi + 5).toInt() : 80;
+                if (ms < 10)   ms = 10;
+                if (ms > 2000) ms = 2000;
+                if (msg.indexOf("\"g0\"") >= 0) _onBtn(0, (uint16_t)ms);
+            }
+
             int k = msg.indexOf("\"key\"");
             if (k >= 0 && _onKey) {
                 const int ri = msg.indexOf("\"r\":");

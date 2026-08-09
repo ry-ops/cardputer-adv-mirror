@@ -47,6 +47,13 @@ void post_trampoline(uint8_t row, uint8_t col, bool shift, bool fn);
 // is sending faster than loop() drains, which is a real symptom, not noise.
 uint32_t dropped();
 
+// Enqueue a top-edge button press. SAFE FROM ANY TASK. btn 0 == BtnG0 (GPIO 0),
+// the only top button M5Unified registers for board_M5CardputerADV. BtnRst is
+// absent on purpose: it drives EN and cuts power to the SoC, so no software
+// press exists to simulate.
+bool postBtn(uint8_t btn, uint16_t ms);
+void postBtn_trampoline(uint8_t btn, uint16_t ms);
+
 // Drain and apply queued events. Call from loop() ONLY.
 void update();
 

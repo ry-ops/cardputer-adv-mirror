@@ -18,22 +18,57 @@ button.on{border-color:var(--ok);color:var(--ok)}
 .stat b{color:var(--fg);font-weight:600}
 #dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--err);vertical-align:middle;margin-right:5px}
 #dot.up{background:var(--ok)}
-#kb{display:inline-flex;flex-direction:column;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;width:max-content;max-width:100%}
-.krow{display:grid;grid-template-columns:repeat(14,var(--ku,34px));gap:4px}
-.key{position:relative;width:var(--ku,34px);height:var(--ku,34px);padding:0;display:flex;align-items:center;justify-content:center;background:#21262d;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--fg);cursor:pointer;user-select:none;box-sizing:border-box}
-.key .sec{position:absolute;top:1px;right:3px;font-size:calc(var(--ku,34px)*0.21);line-height:1;color:var(--dim);cursor:pointer}
-.key .sec:hover{color:var(--ok)}
-.key .pri{font-size:calc(var(--ku,34px)*0.30);line-height:1}
-.key .cap{position:absolute;left:3px;bottom:1px;font-size:calc(var(--ku,34px)*0.24);line-height:1;color:var(--ok)}
-.key:active,.key.dn{background:var(--accent);color:#0d1117;border-color:var(--accent)}
-.key.lbl .pri{letter-spacing:-.3px;white-space:nowrap;max-width:100%;overflow:hidden}
-.key.l2 .pri{font-size:calc(var(--ku,34px)*0.26)}
-.key.l3 .pri{font-size:calc(var(--ku,34px)*0.20)}
-.key.l5 .pri{font-size:calc(var(--ku,34px)*0.145)}
-.key.wide{grid-column:span 1}.key.mod{color:var(--warn)}
-.key.mod.on{background:var(--warn);color:#0d1117;border-color:var(--warn)}
-.key.hit{border-color:var(--ok)}
-.key.arrow{color:var(--ok);font-weight:600}
+#kb{display:grid;gap:0;background:#dcdcdc;border:1px solid #b9b9b9;border-radius:9px;padding:9px 8px 7px;width:max-content;max-width:100%;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
+/* A physical ADV key is TWO parts, which is the layout fact I had been missing:
+ * the legend is printed on the CASE -- forming a continuous light bar across the
+ * whole row -- and a separate black rubber dome sits BELOW it. Rendering one
+ * flat cap per key produced a generic keyboard, not this keyboard. Geometry is
+ * measured from the product photo (docs/adr/0022): 14 uniform columns at a
+ * 21.77px pitch, cell aspect 0.769 w/h, dome 64% of cell width and 32% of its
+ * height. Row 0 and row 3 dome centres agree within 1px, so there is no stagger
+ * and no multi-unit key -- space really is one unit wide. */
+.krow{display:grid;grid-template-columns:repeat(14,var(--ku,32px))}
+.key{position:relative;height:calc(var(--ku,32px)*1.30);display:flex;flex-direction:column;align-items:stretch;background:transparent;border:0;padding:0;cursor:pointer;user-select:none;box-sizing:border-box}
+.key .lgd{position:relative;flex:0 0 53%;background:#ebebeb;color:#15181c;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.krow .key:first-child .lgd{border-radius:3px 0 0 3px}
+.krow .key:last-child .lgd{border-radius:0 3px 3px 0}
+.key .dome{flex:1 1 auto;display:flex;align-items:center;justify-content:center}
+.key .dome::after{content:'';width:64%;height:60%;background:#1e201e;border-radius:calc(var(--ku,32px)*0.17)}
+.key .pri{font-size:calc(var(--ku,32px)*0.44);font-weight:700;line-height:1;white-space:nowrap}
+/* The space cap prints a counterbore mark. U+2334 is absent from common UI
+ * fonts (it rendered as a tofu box in the layout check), so draw it from
+ * borders -- no font dependency, identical at every unit size. */
+.key .spc{width:52%;height:26%;border:solid #15181c;border-width:0 2px 2px 2px;border-radius:0 0 1px 1px}
+.key.l2 .pri{font-size:calc(var(--ku,32px)*0.32)}
+.key.l3 .pri{font-size:calc(var(--ku,32px)*0.26)}
+.key.l5 .pri{font-size:calc(var(--ku,32px)*0.19)}
+/* Upper legend: printed small, high-right, in light blue on the real case. */
+.key .sec{position:absolute;top:3%;right:7%;font-size:calc(var(--ku,32px)*0.27);font-weight:700;line-height:1;color:#7f9dc0}
+.key .sec:hover{color:#0b64d0}
+/* Orange is the board's ACCENT colour for special keys (esc, del, the arrows and
+ * the fn cap all share it). I first read that as an fn-layer code; it is not --
+ * del is orange and dedicated, and ADR 0019 proved the arrows are dedicated too.
+ * So this is styling only; the click sends no extra modifier. */
+.key .fnl{position:absolute;left:5%;bottom:3%;font-size:calc(var(--ku,32px)*0.30);font-weight:700;line-height:1;color:#e6531f}
+.key .fnl:hover{color:#ff7a44}
+.key.cap-grey .lgd{background:#c7c7c7}
+.key.cap-orange .lgd{background:#e6531f;color:#fff}
+.key.cap-blue .lgd{background:#1f5c9e;color:#fff}
+.key.cap-green .lgd{background:#3fba93;color:#10251d}
+.key.cap-dark .lgd{background:#2c2c2c;color:#fff}
+.key.cap-orange .sec,.key.cap-dark .sec{color:#cdd9e6}
+.key.cap-orange .fnl,.key.cap-dark .fnl{color:#ffcbb8}
+.key:active .dome::after,.key.dn .dome::after{background:#58a6ff}
+.key.mod.on .lgd{box-shadow:inset 0 0 0 2px #d29922}
+.key.hit .dome::after{box-shadow:0 0 0 2px #3fb950}
+/* Top edge: BtnG0, the OFF/ON slide switch, microSD, BtnRst, IR on G44 --
+ * physically on the top face, so absent from any front-on view of the board. */
+#topedge{display:flex;align-items:center;gap:8px;background:#ebebeb;border:1px solid #b9b9b9;border-radius:8px;padding:6px 9px;width:max-content;max-width:100%;flex-wrap:wrap;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:11px;color:#15181c}
+#topedge .tlbl{font-weight:700;color:#e6531f;letter-spacing:.04em}
+#topedge .tbtn{background:#f4f4f4;color:#15181c;border:1px solid #9a9a9a;border-radius:5px;padding:4px 9px;font:inherit;font-weight:700;cursor:pointer}
+#topedge .tbtn:hover{border-color:#e6531f;color:#e6531f}
+#topedge .tbtn.rst{border-color:#c0503a;color:#a8331c}
+#topedge .tinfo{color:#5a5a5a;font-size:10px}
 .ar{color:var(--ok);font-weight:600}
 #klog{margin:0;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;font:11px/1.6 ui-monospace,Menlo,monospace;color:var(--dim);min-height:20px;min-width:260px;white-space:pre}
 .note{max-width:760px;color:var(--dim);font-size:11px;border-left:2px solid var(--line);padding-left:10px}
@@ -85,6 +120,20 @@ button.on{border-color:var(--ok);color:var(--ok)}
 </div>
 <pre id="klog"></pre>
 <div id="kb"></div>
+<!-- The ADV's top face carries controls that appear in NO front-on photo of the
+     board: BtnG0, the OFF/ON slide switch, the microSD slot, BtnRst, and the IR
+     LED on G44. Only BtnG0 is readable by firmware -- M5Unified registers a
+     single button for board_M5CardputerADV (BtnA on GPIO 0). BtnRst drives the
+     EN line, which cuts power to the SoC; there is no way for software to
+     "press" it, so it is shown as a physical-only control rather than given a
+     button that would silently do nothing. -->
+<div id="topedge">
+  <span class="tlbl">TOP EDGE</span>
+  <button class="tbtn" id="btng0" title="GPIO 0 — the only top button firmware can read (M5.BtnA)">BtnG0</button>
+  <span class="tinfo">OFF/ON slide · microSD (SCK:G40 MISO:G39 MOSI:G14 CS:G12) · IR:G44</span>
+  <button class="tbtn rst" id="btnrst" title="Drives the EN line — cuts power to the SoC. Physical only.">BtnRst</button>
+  <span class="tinfo" id="g0state">G0 idle</span>
+</div>
 <div id="sd">
   <h2>SD Card <span id="sdstate">checking…</span></h2>
   <div class="sdgrid">
@@ -215,7 +264,7 @@ const kb=$('kb');
 const mods={shift:false,fn:false,ctrl:false,alt:false,opt:false};
 let keysSent=0;
 
-function sendKey(k, forceShift){
+function sendKey(k, forceShift, asArrow){
   // Modifier keys latch locally instead of being transmitted: the firmware
   // needs them as FLAGS accompanying a key, which is how the hardware reports
   // them too (KeysState.shift/.fn alongside the character).
@@ -228,8 +277,16 @@ function sendKey(k, forceShift){
   // symbol specifically -- regardless of the latch state. The device still
   // receives a coordinate plus a shift flag, exactly as a physical press does.
   const sh = forceShift || mods.shift;
+  // asArrow affects the LOG LABEL ONLY -- it does not add a modifier. The four
+  // arrow glyphs are printed in the same orange as the fn cap, which I first
+  // read as "these are fn-layer chords". They are not: ADR 0019 established the
+  // ADV has four DEDICATED arrow keys that report ';' ',' '.' '/' because
+  // M5Cardputer reuses the original keymap, and the 56-key sweep proves they
+  // land without any modifier. Orange is the board's accent colour for special
+  // keys -- 'del' is orange too, and del is plainly dedicated. Sending fn here
+  // would make the browser's press differ from a physical one.
   send({t:'key',r:k.r,c:k.c,shift:sh,fn:mods.fn});
-  noteSent(k.r,k.c,sh?k.hi:k.lo,sh,mods.fn);
+  noteSent(k.r,k.c,asArrow&&k.cap?k.cap:(sh?k.hi:k.lo),sh,mods.fn);
   // Shift and fn are one-shot, matching how you'd physically chord them.
   if(mods.shift||mods.fn){mods.shift=false;mods.fn=false;renderMods()}
 }
@@ -241,20 +298,38 @@ function sendKey(k, forceShift){
 // container, so its tail simply overflowed out of view.
 function fitKeyboard(){
   const kb=$('kb'); if(!kb) return;
-  // Measure the AVAILABLE space, not the keyboard: #kb is a shrink-to-fit flex
-  // item, so its own clientWidth is a function of the unit we are computing --
-  // a feedback loop that latched at the minimum and collapsed the layout to one
-  // column. The viewport (minus body padding and the panel's own border/padding)
-  // is the independent quantity.
-  const room = (document.documentElement.clientWidth || 900) - 32;
-  const avail = Math.max(300, room) - 22;
-  // Every row is now a uniform 14-column grid (the ADV's caps are all one size,
-  // including space), so the widest row is exactly 14 units + 13 gaps.
-  const GAP=4, UNITS=14, GAPS=13;
-  const unit = Math.floor((avail - GAP*GAPS) / UNITS);
-  kb.style.setProperty('--ku', Math.max(18, Math.min(44, unit))+'px');
+  // Measure the AVAILABLE space, not the keyboard: #kb is a shrink-to-fit grid
+  // item, so its own clientWidth is a function of the unit being computed -- a
+  // feedback loop that once latched at the minimum and collapsed the board to a
+  // single column (ADR 0021). The viewport is the independent quantity.
+  const room=(document.documentElement.clientWidth||900)-32;
+  const avail=Math.max(300,room)-20;
+  // Rows are edge-to-edge with NO gap, matching the photo: the legend bar is
+  // continuous across a row. So the width is exactly 14 units.
+  const unit=Math.floor(avail/14);
+  kb.style.setProperty('--ku',Math.max(16,Math.min(46,unit))+'px');
 }
 addEventListener('resize', fitKeyboard);
+
+/* Top-edge buttons. BtnG0 is injected as a BUTTON event, not a key event: it is
+ * a GPIO, not a matrix coordinate, so pushing it through the keyboard path would
+ * require inventing a fake (row,col) that the hardware can never report -- the
+ * exact kind of second vocabulary keyinject.h exists to avoid.
+ *
+ * BtnRst is deliberately inert. It drives EN, which removes power from the SoC;
+ * firmware cannot actuate it, and esp_restart() is a DIFFERENT operation (warm
+ * reset, no power cycle). Offering it as a working button would misrepresent the
+ * hardware, so the click explains itself instead. */
+(function(){
+  const g0=$('btng0'), rst=$('btnrst'), st=$('g0state');
+  if(g0) g0.onpointerdown=e=>{e.preventDefault();
+    send({t:'btn',b:'g0',ms:80});
+    if(st) st.textContent='G0 pressed \u2192 sent';
+  };
+  if(rst) rst.onclick=()=>{
+    if(st) st.textContent='BtnRst is physical only (cuts power via EN)';
+  };
+})();
 
 // Browser-side coverage. The device tracks the same thing; comparing the two
 // numbers is what separates "browser never sent it" from "device never got it".
@@ -283,57 +358,80 @@ if(!window.KEYMAP){
   kb.innerHTML='<div style="color:var(--err);font-size:11px">'+
     'keymap.js not inlined — run tools/gen_keymap.py then tools/gen_web_assets.py</div>';
 }else{
+ // Cap colours are MEASURED from the product photo, not guessed: median RGB of
+ // each legend strip showed only five caps are not bare case plastic --
+ // del/fn orange, Aa blue, opt green, enter near-black, and tab/ctrl/alt a
+ // slightly darker grey than the case. Everything else is #EBEBEB with ink.
+ const CAPCOLOR={'0,13':'orange','2,0':'orange','2,1':'blue','2,13':'dark',
+                 '3,1':'green','1,0':'grey','3,0':'grey','3,2':'grey'};
+ // Legends printed on the case that are NOT the vendor keymap value. The board
+ // prints 'esc' on the ` cap and 'ok' above enter's arrow; both are orange
+ // fn-layer functions on ` / enter respectively.
+ const FNLEGEND={'0,0':'esc','0,13':'del'};
  window.KEYMAP.forEach(row=>{
   const d=document.createElement('div');d.className='krow';
   row.forEach(k=>{
-    // The vendor map stores ' ' at row 3 col 13 only; the physical space bar is
-    // wider than one unit. Widen it in CSS rather than inventing a 15th column,
-    // so the coordinates stay truthful.
-    const isSpace = (k.r===3 && k.c===13);
+    const rc=k.r+','+k.c;
+    // Space is ONE unit on this board. Measuring the photo's dome centres showed
+    // row 0 and row 3 align within a pixel across all 14 columns, so there is no
+    // wide key to special-case -- the earlier double-width space bar was mine,
+    // not the ADV's.
+    const isSpace=(k.r===3 && k.c===13);
     const el=document.createElement('div');
-    // Font size follows the LABEL LENGTH, since that is what determines whether
-    // the text fits the cap. Keying it on "is this a modifier" let 'enter',
-    // 'tab' and 'del' render at full size and overflow.
-    const lbl = isSpace ? 'space' : k.lo;
-    const lenCls = lbl.length>4 ? ' lbl l5' : lbl.length>2 ? ' lbl l3'
-                 : lbl.length>1 ? ' lbl l2' : '';
-    el.className='key'+(k.mod?' mod':'')+(isSpace?' wide':'')+(k.cap?' arrow':'')+lenCls;
-    el.dataset.lo=k.lo; el.dataset.hi=k.hi;
-    el.dataset.rc=k.r+','+k.c;
+    const lbl=isSpace?'space':(FNLEGEND[rc]||k.lo);
+    // Font size follows LABEL LENGTH, the property that actually governs fit.
+    const lenCls=lbl.length>4?' l5':lbl.length>2?' l3':lbl.length>1?' l2':'';
+    const col=CAPCOLOR[rc];
+    el.className='key'+(k.mod?' mod':'')+lenCls+(col?' cap-'+col:'');
+    el.dataset.lo=k.lo; el.dataset.hi=k.hi; el.dataset.rc=rc;
     if(k.mod) el.dataset.mod=k.mod;
 
-    // A physical ADV keycap carries BOTH legends -- '1' and '!', ';' and ':'.
-    // Rendering only one made 47 symbols unreachable and invisible, and the
-    // arrow legend previously REPLACED the ';' it shares a cap with, so the
-    // semicolon looked like a missing key. Print every legend the cap prints,
-    // and make each one its own click target.
-    if(k.mod || isSpace){
-      const c=document.createElement('span'); c.className='pri';
-      c.textContent = isSpace ? 'space' : k.lo;
-      el.appendChild(c);
+    const lgd=document.createElement('div'); lgd.className='lgd';
+    if(isSpace){
+      const sp=document.createElement('div'); sp.className='spc';
+      lgd.appendChild(sp);
     }else{
-      if(k.hi!==k.lo){
-        const hi=document.createElement('span'); hi.className='sec';
-        hi.textContent=k.hi;
-        // Clicking the upper legend sends the key WITH shift, so a symbol is
-        // reachable in one click instead of requiring the shift latch first.
-        hi.onpointerdown=e=>{e.preventDefault();e.stopPropagation();
-          el.classList.add('dn'); sendKey(k, true);};
-        hi.onpointerup=()=>el.classList.remove('dn');
-        el.appendChild(hi);
-      }
-      const lo=document.createElement('span'); lo.className='pri';
-      lo.textContent=k.lo;
-      el.appendChild(lo);
-      if(k.cap){
-        // The arrow is a THIRD legend on the same cap, not a replacement.
-        const ar=document.createElement('span'); ar.className='cap';
-        ar.textContent=k.cap; el.appendChild(ar);
-      }
+      const pri=document.createElement('span'); pri.className='pri';
+      // Letters are printed UPPERCASE on the case even though the key reports
+      // lowercase unshifted -- the legend is the cap, the value is the keymap.
+      pri.textContent=(lbl.length===1&&/[a-z]/.test(lbl))?lbl.toUpperCase():lbl;
+      lgd.appendChild(pri);
     }
 
-    el.title = `row ${k.r} col ${k.c}  ·  ${k.lo}` + (k.hi!==k.lo?` / ${k.hi}`:'')
-             + (k.cap?`  ·  arrow key (reports '${k.lo}')`:'');
+    if(!k.mod && !isSpace){
+      // A secondary legend is printed ONLY when the shifted value is a DIFFERENT
+      // GLYPH. For the 26 letters the vendor map stores lo='q', hi='Q' -- the
+      // same character in the other case, which the cap prints once. Rendering
+      // hi!==lo naively put a redundant blue 'Q' above every letter, which the
+      // real board does not have. Shift is still reachable via the Aa latch.
+      const hasSec = k.hi!==k.lo && k.hi.toLowerCase()!==k.lo.toLowerCase();
+      if(hasSec){
+        const hi=document.createElement('span'); hi.className='sec';
+        hi.textContent=k.hi;
+        hi.onpointerdown=e=>{e.preventDefault();e.stopPropagation();
+          el.classList.add('dn'); sendKey(k,true);};
+        hi.onpointerup=()=>el.classList.remove('dn');
+        lgd.appendChild(hi);
+      }
+      if(k.cap){
+        // The arrow is a third legend on a shared cap, printed in fn-orange.
+        // Clicking it sends fn+key, which is how the chord is produced on metal.
+        const ar=document.createElement('span'); ar.className='fnl';
+        ar.textContent=k.cap;
+        // Same wire event as clicking the cap -- the arrow needs no modifier.
+        ar.onpointerdown=e=>{e.preventDefault();e.stopPropagation();
+          el.classList.add('dn'); sendKey(k,false,true);};
+        ar.onpointerup=()=>el.classList.remove('dn');
+        lgd.appendChild(ar);
+      }
+    }
+    el.appendChild(lgd);
+    const dome=document.createElement('div'); dome.className='dome';
+    el.appendChild(dome);
+
+    el.title=`row ${k.r} col ${k.c}  \u00b7  ${k.lo}`+(k.hi!==k.lo?` / ${k.hi}`:'')
+            +(k.cap?`  \u00b7  dedicated arrow ${k.cap} (reports '${k.lo}')`:'')
+            +(FNLEGEND[rc]?`  \u00b7  cap prints '${FNLEGEND[rc]}'`:'');
     el.onpointerdown=e=>{e.preventDefault();el.classList.add('dn');sendKey(k)};
     el.onpointerup=el.onpointerleave=()=>el.classList.remove('dn');
     d.appendChild(el);

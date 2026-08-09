@@ -53,4 +53,58 @@ case " $* " in
     ;;
 esac
 
+# --- sandbox writability shim -----------------------------------------------
+# PlatformIO validates --project-dir with a click Path(writable=True) check,
+# which calls os.access(dir, W_OK). Inside the agent sandbox that syscall
+# returns False for the MOUNT POINT itself while returning True for its
+# children -- same uid (501), same owner, same 0755 mode, and a real
+# open(...,'w') in the directory SUCCEEDS. So the probe is wrong, not the
+# permissions, and pio aborts with:
+#   Error: Invalid value for '-d' / '--project-dir': Path '...' is not writable.
+#
+# Passing the project dir as a CHILD-relative path sidesteps the bad probe on
+# the mount point. Only do this when os.access disagrees with an actual write,
+# so a genuinely read-only checkout still fails loudly instead of silently.
+if [ -z "${M5_NO_ACCESS_SHIM:-}" ] && python3 - <<'PY'
+import os, sys
+d = os.getcwd()
+probe_says_ro = not os.access(d, os.W_OK)
+try:
+    p = os.path.join(d, ".pio_write_probe")
+    open(p, "w").close(); os.remove(p)
+    really_writable = True
+except OSError:
+    really_writable = False
+sys.exit(0 if (probe_says_ro and really_writable) else 1)
+PY
+then
+    # No path spelling fixes this: os.access returns False for the mount point
+    # under EVERY form (trailing slash, /., realpath, and via a symlink), so
+    # there is no directory argument that satisfies the probe. Patch the probe.
+    #
+    # Scope is deliberately narrow: only click's W_OK branch, only for a
+    # directory that a real write test proves writable. Any other path -- and a
+    # genuinely read-only one -- still fails exactly as it would unpatched.
+    export PLATFORMIO_CORE_DIR="${PLATFORMIO_CORE_DIR:-$HOME/.platformio}"
+    exec python3 -c '
+import os, sys, click.types
+
+_real = os.access
+def _access(path, mode, **kw):
+    if mode & os.W_OK and os.path.isdir(path) and not _real(path, mode, **kw):
+        try:                                     # believe a real write, not the probe
+            p = os.path.join(path, ".pio_access_probe")
+            open(p, "w").close(); os.remove(p)
+            return True
+        except OSError:
+            return False
+    return _real(path, mode, **kw)
+
+click.types.os.access = _access                  # only the click Path() check
+sys.argv = ["platformio"] + sys.argv[1:]
+from platformio.__main__ import main
+sys.exit(main())
+' "$@"
+fi
+
 exec python3 -m platformio "$@"

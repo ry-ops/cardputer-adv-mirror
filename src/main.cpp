@@ -121,6 +121,8 @@ void setup()
     // moment anything changes.
     keyinject::begin();
     CardputerMirror.onKey(keyinject::post_trampoline);
+    // BtnG0 gets its own sink: it is a GPIO, not a matrix coordinate.
+    CardputerMirror.onBtn(keyinject::postBtn_trampoline);
     menu::begin();
 
     banner();

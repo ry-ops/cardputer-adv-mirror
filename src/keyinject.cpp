@@ -7,7 +7,10 @@
 namespace keyinject {
 namespace {
 
-struct Evt { uint8_t row, col; bool shift, fn; };
+// One queue for both kinds so ordering between a key and a button press is
+// preserved -- two queues would let a G0 press overtake keys typed before it.
+enum class Kind : uint8_t { Key, Btn };
+struct Evt { Kind kind; uint8_t row, col; bool shift, fn; uint16_t ms; };
 
 QueueHandle_t s_q       = nullptr;
 uint32_t      s_applied = 0;
@@ -37,7 +40,7 @@ void begin()
 bool post(uint8_t row, uint8_t col, bool shift, bool fn)
 {
     if (!s_q || row >= 4 || col >= 14) return false;
-    Evt e{row, col, shift, fn};
+    Evt e{Kind::Key, row, col, shift, fn, 0};
     return xQueueSend(s_q, &e, 0) == pdTRUE;   // never block the socket task
 }
 
@@ -48,6 +51,19 @@ void update()
     // Bounded drain: a full queue must not monopolise a single loop pass and
     // starve the mirror's frame budget.
     for (int i = 0; i < 8 && xQueueReceive(s_q, &e, 0) == pdTRUE; ++i) {
+        if (e.kind == Kind::Btn) {
+            // Drive the button through M5Unified's own state machine rather than
+            // calling a handler directly: setRawState() is what the library uses
+            // to feed real GPIO samples, so wasPressed()/wasReleased() and the
+            // hold timers all behave exactly as for a physical push. Anything
+            // polling M5.BtnA sees no difference between this and a finger.
+            const uint32_t now = millis();
+            M5.BtnA.setRawState(now, true);
+            M5.BtnA.setRawState(now + e.ms, false);
+            menu::recordKey(0, 0xFE, 0, false, false, true);
+            ++s_applied;
+            continue;
+        }
         const char c = valueAt(e.row, e.col, e.shift);
 
         // Log FIRST, unconditionally, before any filtering. A key the menu
@@ -79,6 +95,20 @@ void update()
 void post_trampoline(uint8_t row, uint8_t col, bool shift, bool fn)
 {
     if (!post(row, col, shift, fn)) ++s_dropped;
+}
+
+bool postBtn(uint8_t btn, uint16_t ms)
+{
+    if (!s_q || btn != 0) return false;      // only BtnG0 exists to inject
+    if (ms < 10)   ms = 10;
+    if (ms > 2000) ms = 2000;
+    Evt e{Kind::Btn, 0, 0, false, false, ms};
+    return xQueueSend(s_q, &e, 0) == pdTRUE;
+}
+
+void postBtn_trampoline(uint8_t btn, uint16_t ms)
+{
+    if (!postBtn(btn, ms)) ++s_dropped;
 }
 
 uint32_t applied() { return s_applied; }
