@@ -11,9 +11,10 @@ CardputerMirror.update();   // loop()   — budgeted scan, pushes changed tiles
 
 Browse to the IP printed on the device screen.
 
-> **Note:** the display and keyboard are mirrored over WiFi, but the ADV still
-> needs to be connected via USB — that's how it's powered. WiFi carries the
-> mirror data; USB keeps the device on.
+> **Note:** the display and keyboard are mirrored over WiFi, but getting the
+> firmware onto the device still requires a USB connection — there's no OTA
+> update path, so `pio run -t upload` flashes over the ESP32-S3's native USB
+> CDC. The ADV runs on battery once flashed; USB isn't needed to keep it on.
 
 ![Cardputer ADV on-device screen](docs/images/screen.png)
 
