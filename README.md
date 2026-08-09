@@ -11,6 +11,10 @@ CardputerMirror.update();   // loop()   — budgeted scan, pushes changed tiles
 
 Browse to the IP printed on the device screen.
 
+> **Note:** the display and keyboard are mirrored over WiFi, but the ADV still
+> needs to be connected via USB — that's how it's powered. WiFi carries the
+> mirror data; USB keeps the device on.
+
 ![Cardputer ADV on-device screen](docs/images/screen.png)
 
 ![Browser on-screen keyboard](docs/images/keyboard.png)
