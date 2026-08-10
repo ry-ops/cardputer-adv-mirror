@@ -4,7 +4,6 @@
 #include <M5Unified.h>
 #include <WiFi.h>
 #include "wifi_manager_rt.h"
-#include "sd_manager.h"
 #include "keyinject.h"
 #include "CardputerMirror.h"
 
@@ -19,7 +18,7 @@ constexpr int kCols  = 240 / kCharW;   // 40
 constexpr int kBodyY = 12;
 constexpr int kBodyRows = 13;
 
-enum class Screen : uint8_t { Home, Network, Scan, Storage, System, Mirror, Keys };
+enum class Screen : uint8_t { Home, Network, Scan, System, Mirror, Keys };
 
 Screen   s_screen  = Screen::Home;
 int      s_sel     = 0;
@@ -115,8 +114,8 @@ void row(int i, const char* text, bool sel, uint16_t fg = TFT_WHITE)
 }
 
 // ---------------------------------------------------------------- Home -----
-const char* kHomeItems[] = { "Network", "Storage", "System", "Mirror", "Key Test" };
-constexpr int kHomeN = 5;
+const char* kHomeItems[] = { "Network", "System", "Mirror", "Key Test" };
+constexpr int kHomeN = 4;
 
 void drawHome()
 {
@@ -134,19 +133,19 @@ void drawHome()
                      w.ok() ? (w.ssid ? w.ssid : "connected") : "AP MODE");
             sub = tmp;
         } else if (i == 1) {
-            const auto& si = sdmgr::info();
-            snprintf(tmp, sizeof(tmp), "Storage      %s",
-                     si.present ? sdmgr::fsTypeName(si.fsType) : "no card");
-            sub = tmp;
-        } else if (i == 2) {
             snprintf(tmp, sizeof(tmp), "System       %ukB free",
                      (unsigned)(ESP.getFreeHeap() / 1024));
             sub = tmp;
-        } else {
+        } else if (i == 2) {
             snprintf(tmp, sizeof(tmp), "Mirror       %d client%s",
                      CardputerMirror.clientCount(),
                      CardputerMirror.clientCount() == 1 ? "" : "s");
             sub = tmp;
+        } else {
+            // Was an open `else`, so the Key Test row inherited the Mirror
+            // subtitle and reported a client count. Only visible once Storage
+            // was removed and the indices shifted.
+            sub = "Key Test";
         }
         strncpy(line, sub, sizeof(line) - 1); line[sizeof(line) - 1] = 0;
         row(i, line, i == s_sel,
@@ -154,11 +153,11 @@ void drawHome()
     }
 
     M5.Display.setTextColor(TFT_DARKGREY, TFT_BLACK);
-    M5.Display.setCursor(4, kBodyY + 5 * (kCharH + 2) + 4);
+    M5.Display.setCursor(4, kBodyY + 4 * (kCharH + 2) + 4);
     snprintf(line, sizeof(line), "http://%s", w.ip().toString().c_str());
     M5.Display.print(line);
     if (w.mdnsUp) {
-        M5.Display.setCursor(4, kBodyY + 6 * (kCharH + 2) + 4);
+        M5.Display.setCursor(4, kBodyY + 5 * (kCharH + 2) + 4);
         M5.Display.printf("or http://%s.local", w.hostname ? w.hostname : "cardputer");
     }
     hint("up/dn select  ENT open");
@@ -277,65 +276,6 @@ void drawScan()
     M5.Display.setCursor(2, 135 - 19);
     M5.Display.printf("2.4GHz only - a 5GHz AP CANNOT appear");
     hint("ENT rescan  up/dn scroll  ` back");
-}
-
-// ------------------------------------------------------------- Storage -----
-void drawStorage()
-{
-    hdr("Storage");
-    // MY BUG: this used to call sdmgr::refresh() unconditionally on every
-    // repaint. refresh() calls begin() when no card is mounted, and begin() is
-    // a blocking SD probe -- so with no card inserted, merely LOOKING at this
-    // screen spawned a remount attempt several times a second. That is the
-    // sdmmc_init_ocr 0x107 / send_if_cond 0x108 flood in the serial log.
-    //
-    // A draw function must not drive hardware. Probe on a slow cadence, and
-    // only re-probe an ABSENT card -- a mounted one is restatted cheaply.
-    static uint32_t s_lastProbe = 0;
-    const uint32_t nowMs = millis();
-    if (sdmgr::info().present) {
-        if (nowMs - s_lastProbe > 2000) { s_lastProbe = nowMs; sdmgr::refresh(); }
-    } else if (nowMs - s_lastProbe > 10000) {
-        s_lastProbe = nowMs; sdmgr::refresh();
-    }
-    const auto& si = sdmgr::info();
-    char l[48];
-    int r = 0;
-
-    M5.Display.setCursor(4, kBodyY);
-    M5.Display.setTextColor(si.present ? TFT_GREEN : TFT_RED, TFT_BLACK);
-    M5.Display.print(si.present ? "CARD   present" : "CARD   not detected");
-    M5.Display.setTextColor(TFT_WHITE, TFT_BLACK);
-    r = 1;
-
-    if (si.present) {
-        snprintf(l, sizeof(l), "NAME   %s", si.name);                       row(r++, l, false);
-        snprintf(l, sizeof(l), "FS     %s", sdmgr::fsTypeName(si.fsType));  row(r++, l, false);
-        snprintf(l, sizeof(l), "SIZE   %llu MB",
-                 (unsigned long long)(si.capacityB / (1024ULL * 1024ULL)));  row(r++, l, false);
-        if (si.totalB) {
-            snprintf(l, sizeof(l), "FREE   %llu of %llu MB",
-                     (unsigned long long)(si.freeB  / (1024ULL * 1024ULL)),
-                     (unsigned long long)(si.totalB / (1024ULL * 1024ULL)));
-            row(r++, l, false);
-        }
-    } else {
-        snprintf(l, sizeof(l), "%s", sdmgr::detail());                       row(r++, l, false, TFT_YELLOW);
-    }
-    if (sdmgr::state() == sdmgr::State::Formatting) {
-        snprintf(l, sizeof(l), "FORMATTING %u%%", (unsigned)sdmgr::progress());
-        row(r++, l, false, TFT_YELLOW);
-    }
-
-    r++;
-    row(r++, "[ Remount ]", s_sel == 0, TFT_CYAN);
-    // Formatting is deliberately NOT offered here. A destructive action needs a
-    // confirmation the 4-row keyboard cannot make un-fat-fingerable, and the
-    // browser already has a two-step confirm. See ADR 0008.
-    M5.Display.setTextColor(TFT_DARKGREY, TFT_BLACK);
-    M5.Display.setCursor(4, kBodyY + (r + 1) * (kCharH + 2));
-    M5.Display.print("format: browser only (destructive)");
-    hint("ENT run   ` back");
 }
 
 // -------------------------------------------------------------- System -----
@@ -489,7 +429,6 @@ void draw()
         case Screen::Home:    drawHome();    break;
         case Screen::Network: drawNetwork(); break;
         case Screen::Scan:    drawScan();    break;
-        case Screen::Storage: drawStorage(); break;
         case Screen::System:  drawSystem();  break;
         case Screen::Mirror:  drawMirror();  break;
         case Screen::Keys:    drawKeys();    break;
@@ -516,9 +455,8 @@ void activate()
     switch (s_screen) {
         case Screen::Home:
             s_screen = (s_sel == 0) ? Screen::Network
-                     : (s_sel == 1) ? Screen::Storage
-                     : (s_sel == 2) ? Screen::System
-                     : (s_sel == 3) ? Screen::Mirror : Screen::Keys;
+                     : (s_sel == 1) ? Screen::System
+                     : (s_sel == 2) ? Screen::Mirror : Screen::Keys;
             s_sel = 0;
             break;
         case Screen::Network:
@@ -531,11 +469,6 @@ void activate()
             }
             break;
         case Screen::Scan:    runScan(); break;
-        case Screen::Storage:
-            toast("remounting...", 4000); draw();
-            // Explicit user action bypasses the probe throttle above.
-            toast(sdmgr::begin() ? "mounted" : sdmgr::detail(), 3000);
-            break;
         case Screen::System:
             toast("rebooting", 800); draw(); delay(400); ESP.restart();
             break;
@@ -663,10 +596,6 @@ static uint32_t liveHash()
             break;
         case Screen::Mirror:
             mix((uint32_t)CardputerMirror.framesSent());
-            break;
-        case Screen::Storage:
-            mix((uint32_t)sdmgr::state());
-            mix((uint32_t)sdmgr::progress());
             break;
         case Screen::Home:
             mix((uint32_t)(ESP.getFreeHeap() / 1024));

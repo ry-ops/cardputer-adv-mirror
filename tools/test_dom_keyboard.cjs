@@ -331,6 +331,23 @@ setTimeout(() => {
     ok(!/\.note\{/.test(styleText), 'orphaned .note CSS rule removed');
   }
 
+  // ---- SD card feature removed entirely (ADR 0036)
+  // The user asked for the SD function gone from everything: firmware manager,
+  // menu screen, HTTP routes and this panel. Asserted NEGATIVELY, like the
+  // screws and the duplicate mic before it -- a panel whose fetches 404 would
+  // sit there showing an eternal "checking..." rather than fail visibly, and
+  // dead CSS for a removed element is inert rather than wrong. Both are the
+  // kind of leftover that survives review.
+  for (const id of ['sd','sdstate','sdname','sdfs','sdcap','sdused','sdfree',
+                    'sdspd','sdbar','sdfill','sddetail','sdref','sdmnt','sdumnt',
+                    'sdfmt','sdau','fmt'])
+    ok(!doc.getElementById(id), `no #${id} -- SD panel is gone`);
+  ok(!/#sd\{|#sdbar\{|#sdfill\{|\.sdgrid\{|#sddetail\{/.test(styleText),
+     'no orphaned SD stylesheet rules');
+  ok(!/\/api\/sd\//.test(html), 'page makes no /api/sd requests');
+  ok(!/sdRender|sdStatus|sdPost|fmtB/.test(html),
+     'SD script helpers removed, including the fmtB formatter only it used');
+
   // ---- CARDPUTER ADV label photo (ADR 0035) -------------------------------
   {
     const lab = doc.getElementById('devlabel');

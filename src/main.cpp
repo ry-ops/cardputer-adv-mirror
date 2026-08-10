@@ -9,7 +9,6 @@
 #include <WiFi.h>
 #include "CardputerMirror.h"
 #include "wifi_manager.h"
-#include "sd_manager.h"
 #include "wifi_manager_rt.h"
 #include "menu.h"
 #include "keyinject.h"
@@ -116,15 +115,6 @@ static void banner()
     if (gWifi.mdnsUp)
         Serial.printf ("                 : http://%s.local  (survives DHCP changes)\n",
                        gWifi.hostname);
-    {
-        const sdmgr::Info& si = sdmgr::info();
-        Serial.printf("  SD card       : %s\n", sdmgr::detail());
-        if (si.present && si.totalB)
-            Serial.printf("    %s  %llu MB free of %llu MB\n",
-                          sdmgr::fsTypeName(si.fsType),
-                          (unsigned long long)(si.freeB  / (1024ULL*1024ULL)),
-                          (unsigned long long)(si.totalB / (1024ULL*1024ULL)));
-    }
     Serial.printf ("  Readback self-test: %d%%   <-- THE NUMBER THAT MATTERS\n", st);
     if (st < 0)        Serial.println("    !! self-test could not allocate; inconclusive");
     else if (st >= 95) Serial.println("    OK: 3-wire GRAM readback is reliable. ADR 0002 holds.");
@@ -168,12 +158,6 @@ void setup()
 
     CardputerMirror.begin(mc);            // <-- line 1
 
-    // SD after the mirror, because attachRoutes() needs the server object.
-    // begin() failing is not fatal — it just means no card is inserted, and
-    // the /api/sd endpoints will report that rather than the device refusing
-    // to boot.
-    sdmgr::begin();
-    sdmgr::attachRoutes();
 
     // The boot status text is gone: every value it printed now lives on a menu
     // screen that stays current, instead of a snapshot that goes stale the
@@ -231,7 +215,6 @@ void loop()
 
     heartbeat();
     keyinject::update();                  // apply remote keys BEFORE repaint
-    sdmgr::update();                      // runs a queued format, if any
     menu::update();                       // repaint before the mirror reads GRAM
     CardputerMirror.update();             // <-- line 2
     delay(2);

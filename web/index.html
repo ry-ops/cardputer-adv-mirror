@@ -109,18 +109,6 @@ button.on{border-color:var(--ok);color:var(--ok)}
 .ar{color:var(--ok);font-weight:600}
 
 .note code{color:var(--accent)}
-#sd{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;max-width:760px;width:100%}
-#sd h2{font-size:12px;font-weight:600;margin:0 0 8px;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
-#sdstate{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--line);color:var(--dim)}
-#sdstate.mounted{color:var(--ok);border-color:var(--ok)}
-#sdstate.unformatted,#sdstate.formatting{color:var(--warn);border-color:var(--warn)}
-#sdstate.error,#sdstate.absent{color:var(--err);border-color:var(--err)}
-.sdgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px 14px;font-size:11px;color:var(--dim);margin-bottom:10px}
-.sdgrid b{display:block;color:var(--fg);font-size:12px;font-weight:600}
-#sdbar{height:6px;background:#21262d;border-radius:3px;overflow:hidden;margin-bottom:10px}
-#sdfill{height:100%;width:0;background:var(--accent);transition:width .3s}
-#sdfill.warn{background:var(--warn)}
-#sddetail{font-size:11px;color:var(--dim);margin-bottom:10px;min-height:16px}
 #fmt{border-color:var(--err);color:var(--err)}
 #fmt:hover{background:var(--err);color:#0d1117}
 #fmt:disabled{opacity:.4;cursor:not-allowed;background:var(--panel);color:var(--err)}
@@ -384,27 +372,6 @@ button.on{border-color:var(--ok);color:var(--ok)}
      EN line, which cuts power to the SoC; there is no way for software to
      "press" it, so it is shown as a physical-only control rather than given a
      button that would silently do nothing. -->
-<div id="sd">
-  <h2>SD Card <span id="sdstate">checking…</span></h2>
-  <div class="sdgrid">
-    <span>card<b id="sdname">—</b></span>
-    <span>filesystem<b id="sdfs">—</b></span>
-    <span>capacity<b id="sdcap">—</b></span>
-    <span>used<b id="sdused">—</b></span>
-    <span>free<b id="sdfree">—</b></span>
-    <span>bus speed<b id="sdspd">—</b></span>
-  </div>
-  <div id="sdbar"><div id="sdfill"></div></div>
-  <div id="sddetail">—</div>
-  <div class="bar" style="justify-content:flex-start">
-    <button id="sdref">Refresh</button>
-    <button id="sdmnt">Mount</button>
-    <button id="sdumnt">Unmount</button>
-    <select id="sdfmt"><option value="1" selected>FAT32</option><option value="0">Auto (FAT16/32)</option></select>
-    <select id="sdau"><option value="0" selected>Auto cluster</option><option value="4096">4 KB</option><option value="16384">16 KB</option><option value="32768">32 KB</option></select>
-    <button id="fmt">Format — erases card</button>
-  </div>
-</div>
 <!-- The explanatory note block that stood here was removed at the user's
      request. The facts it carried are not lost: the dual-glyph and arrow-key
      behaviour is documented in ADR 0019, the colour-order and GRAM-readback
@@ -813,56 +780,4 @@ addEventListener('keydown',e=>{
   noteSent(spec.r,spec.c);
 });
 
-/* ---------------- SD card panel ---------------- */
-const fmtB=b=>{b=Number(b)||0;if(b<1024)return b+' B';const u=['KB','MB','GB','TB'];let i=-1;do{b/=1024;i++}while(b>=1024&&i<3);return b.toFixed(b<10?1:0)+' '+u[i]};
-
-let sdPoll=null;
-function sdRender(d){
-  const st=$('sdstate');
-  st.textContent=d.state; st.className=d.state;
-  $('sdname').textContent = d.name||'—';
-  $('sdfs').textContent   = d.fs||'—';
-  $('sdcap').textContent  = d.capacity?fmtB(d.capacity):'—';
-  $('sdused').textContent = d.total?fmtB(d.used):'—';
-  $('sdfree').textContent = d.total?fmtB(d.free):'—';
-  $('sdspd').textContent  = d.speedKhz?(d.speedKhz/1000).toFixed(0)+' MHz':'—';
-  $('sddetail').textContent = d.detail||'';
-
-  const fill=$('sdfill');
-  if(d.state==='formatting'){ fill.className='warn'; fill.style.width=(d.progress||0)+'%'; }
-  else { fill.className=''; fill.style.width = d.total ? (100*d.used/d.total)+'%' : '0'; }
-
-  $('fmt').disabled = (d.state==='formatting'||d.state==='absent');
-
-  // While a format runs, poll fast so progress is visible; otherwise idle.
-  if(d.state==='formatting'){ if(!sdPoll) sdPoll=setInterval(sdStatus,700); }
-  else if(sdPoll){ clearInterval(sdPoll); sdPoll=null; }
-}
-async function sdStatus(){
-  try{ sdRender(await (await fetch('/api/sd/status')).json()); }
-  catch(e){ $('sddetail').textContent='status request failed: '+e; }
-}
-async function sdPost(path){
-  try{ sdRender(await (await fetch(path,{method:'POST'})).json()); }
-  catch(e){ $('sddetail').textContent='request failed: '+e; }
-}
-$('sdref').onclick =()=>sdStatus();
-$('sdmnt').onclick =()=>sdPost('/api/sd/mount');
-$('sdumnt').onclick=()=>sdPost('/api/sd/unmount');
-$('fmt').onclick=async()=>{
-  const fs=$('sdfmt').value==='1'?'FAT32':'auto-selected FAT';
-  // Two-step confirm: this is irreversible and the button sits next to
-  // harmless ones.
-  if(!confirm('Format the SD card as '+fs+'?\n\nEVERY FILE ON THE CARD WILL BE ERASED.\nThis cannot be undone.'))return;
-  if(prompt('Type FORMAT to confirm.')!=='FORMAT')return;
-  const q='?confirm=FORMAT&fat32='+$('sdfmt').value+'&au='+$('sdau').value;
-  try{
-    const r=await fetch('/api/sd/format'+q,{method:'POST'});
-    const d=await r.json();
-    if(!r.ok){ $('sddetail').textContent='refused: '+(d.error||r.status); return; }
-    sdRender(d);
-  }catch(e){ $('sddetail').textContent='format request failed: '+e; }
-};
-sdStatus();
-setInterval(()=>{ if(!sdPoll) sdStatus(); }, 5000);
 </script></body></html>

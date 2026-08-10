@@ -97,8 +97,10 @@ public:
     int    selfTestScore() const { return _selfTest; }
     uint32_t framesSent() const  { return _framesSent; }
 
-    // The running server, so other modules (e.g. sd_manager) can add routes
-    // without this class having to know about them. nullptr before begin().
+    // The running server, so host firmware can add its own routes without this
+    // class having to know about them. nullptr before begin(). This is the hook
+    // that makes the mirror droppable into other firmware -- the sd_manager
+    // that used to use it is gone (ADR 0036), but the seam is the point.
     // Returned as void* so callers that never touch HTTP don't have to pull
     // in ESPAsyncWebServer.h; cast to AsyncWebServer* at the use site.
     void*  serverHandle() const;
