@@ -2,9 +2,40 @@
 
 ![Version](https://img.shields.io/badge/Version-0.1.0-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
+![Platform](https://img.shields.io/badge/Platform-ESP32--S3-orange)
+![Cost](https://img.shields.io/badge/Cost-Free-brightgreen)
 
 **View and control** an **M5Stack Cardputer ADV** from a web browser, over WiFi.
 Implements **ADR 0002** (non-invasive GRAM readback) with key injection on top.
+
+## Why you'd want this
+
+- **The real screen, not a simulation.** Pixels come straight off the ST7789's
+  own GRAM over 3-wire SPI — no app hooks, no patched firmware. A boot
+  self-test reports exactly how reliable that readback is on your unit before
+  you trust a single frame.
+- **Full remote control, not just viewing.** Click the on-screen keyboard, or
+  hit **Capture my keyboard** and use your real one — every key (arrows
+  included) lands on the exact matrix coordinate a physical press would use,
+  so the firmware can't tell the difference.
+- **Cuts the cable entirely.** Flash once over USB, then the ADV mirrors *and*
+  takes input on WiFi alone — across the room, on battery. Two real bugs (WiFi
+  modem sleep, a keystroke counter that lied) used to make control look
+  USB-only; both are root-caused and fixed — see **Control over WiFi** below.
+- **Multi-client.** More than one browser can watch the same device at once
+  (see `2 clients` in the screenshot below).
+- **A wire protocol that earns its keep.** Dirty tiles only, RLE-coded: a
+  flat or banded tile costs 40 bytes against 5,400 raw — under 1%. The
+  worst case (noise) falls back to raw automatically instead of bloating.
+- **Tunable, live.** Trade CPU headroom for frame rate on the fly, from
+  Gentle (~14 fps) to Aggressive (~18 fps), against a hard ~20.6 fps ceiling
+  set by the SPI bus itself.
+- **Actually verified, not just claimed.** A fuzzed codec (600+ trials, 0
+  failures) cross-checked against the shipped browser decoder, an automated
+  keyboard-coverage test suite, and 37 ADRs documenting every bug found along
+  the way — including the wrong turns.
+- **Free.** MIT licensed. No app, no account, no cloud — everything runs on
+  the device and in your browser.
 
 ```
 CardputerMirror.begin();    // setup()  — WiFi + HTTP + WebSocket
