@@ -88,6 +88,27 @@ Result begin(const Profile* profiles, size_t count,
     if (hostname && *hostname) WiFi.setHostname(hostname);
     WiFi.persistent(false);      // don't wear flash rewriting creds each boot
     WiFi.setAutoReconnect(true);
+    // Modem sleep OFF. The core's default on S3 is WIFI_PS_MIN_MODEM, applied
+    // automatically at STA_START -- we never called setSleep(), so we had it.
+    //
+    // It is asymmetric by construction, which is why it presents as "control
+    // is broken but the screen is fine". Modem sleep parks the receiver
+    // between the AP's beacons: OUTBOUND frames (our tile stream) wake the
+    // radio and go out immediately, while INBOUND frames (every keypress)
+    // wait for the AP to advertise them at the next DTIM and for us to wake
+    // and collect. That is up to a beacon interval of added latency per
+    // packet, ~100 ms typical, worse on a busy or distant AP -- and on a TCP
+    // socket carrying a heavy opposing stream, delayed ACKs plus a stalled
+    // receive window can turn that latency into apparent dead keys.
+    //
+    // USB is not the variable here, but it correlates perfectly with the
+    // symptom: a device on the bench is a metre from the AP with the host
+    // holding the link busy, and one on battery is across the room. Same
+    // firmware, different margin.
+    //
+    // Costs idle current. This device streams the framebuffer continuously
+    // whenever a browser is attached, so the radio is not idle anyway.
+    WiFi.setSleep(false);
     WiFi.disconnect(true, true); // clear any stored AP from a prior sketch
     delay(100);
 

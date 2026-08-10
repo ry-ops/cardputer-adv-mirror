@@ -331,6 +331,25 @@ setTimeout(() => {
     ok(!/\.note\{/.test(styleText), 'orphaned .note CSS rule removed');
   }
 
+  // ---- keys are only counted when they actually go out (ADR 0037)
+  // send() returns false when the socket is down; noteSent() used to count
+  // unconditionally, so the page reported success for presses it dropped.
+  // Asserted on SOURCE rather than behaviour: jsdom has no WebSocket peer, so
+  // exercising the closed-socket path here would test the mock, not the page.
+  ok(/const send\s*=\s*o\s*=>\s*\{[^}]*return false;[^}]*return true;\s*\}/s.test(html),
+     'send() returns a boolean rather than short-circuiting to undefined');
+  {
+    const calls = html.match(/noteSent\([^)]*\)/g) || [];
+    const invocations = calls.filter(s => !/^noteSent\(r,c,ok\)/.test(s));
+    ok(invocations.length === 3, `all three noteSent call sites found (${invocations.length})`);
+    ok(invocations.every(s => /send\(/.test(s)),
+       'every noteSent() call is passed send()\'s return, not called blind');
+  }
+  ok(!/send\(\{t:'key'[^}]*\}\);\s*\n\s*noteSent/.test(html),
+     'no call site sends then counts as two independent statements');
+  ok(doc.getElementById('kdrop'), 'dropped-key counter is on the page');
+  ok(/keysDropped\+\+/.test(html), 'drops are counted, not merely ignored');
+
   // ---- SD card feature removed entirely (ADR 0036)
   // The user asked for the SD function gone from everything: firmware manager,
   // menu screen, HTTP routes and this panel. Asserted NEGATIVELY, like the

@@ -179,11 +179,21 @@ static void heartbeat()
     static uint32_t last = 0;
     if (millis() - last < 2000) return;
     last = millis();
-    Serial.printf("[%6lus] ip=%-15s clients=%d tiles=%lu heap=%u\n",
+    // keys= is the device's own count of remote presses APPLIED, and it is the
+    // number that settles "is control broken". The browser's "keys sent" is
+    // the browser's opinion; this is the device's. If the browser counts a
+    // press and this does not move, the packet never arrived -- which is a
+    // link problem. If both move and nothing happens on screen, it is a menu
+    // problem. Without this pair the two are indistinguishable, and that
+    // ambiguity is what made "control only works over USB" take this long.
+    Serial.printf("[%6lus] ip=%-15s clients=%d tiles=%lu keys=%lu/%lu rssi=%d heap=%u\n",
                   millis() / 1000,
                   CardputerMirror.ipAddress().c_str(),
                   CardputerMirror.clientCount(),
                   (unsigned long)CardputerMirror.framesSent(),
+                  (unsigned long)keyinject::applied(),
+                  (unsigned long)keyinject::dropped(),
+                  (int)WiFi.RSSI(),
                   (unsigned)ESP.getFreeHeap());
 }
 

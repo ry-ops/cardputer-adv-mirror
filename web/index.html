@@ -16,6 +16,7 @@ button:hover{border-color:var(--accent);color:var(--accent)}
 button.on{border-color:var(--ok);color:var(--ok)}
 .stat{display:flex;gap:14px;color:var(--dim);font-size:11px;flex-wrap:wrap;justify-content:center}
 .stat b{color:var(--fg);font-weight:600}
+#kdrop.bad{color:var(--err)}
 #dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--err);vertical-align:middle;margin-right:5px}
 #dot.up{background:var(--ok)}
 #kb{display:grid;gap:0;background:#dcdcdc;border:1px solid #b9b9b9;border-radius:9px;padding:9px 8px 7px;width:max-content;max-width:100%;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
@@ -359,6 +360,7 @@ button.on{border-color:var(--ok);color:var(--ok)}
         <span>tiles</span><b id="tot">0</b>
         <span>self-test</span><b id="st">—</b>
         <span>keys sent</span><b id="ksent">0</b>
+        <span>keys dropped</span><b id="kdrop">0</b>
         <span>coverage</span><b id="kcov">0/56</b>
       </div>
     </div>
@@ -460,7 +462,10 @@ function connect(){
   };
 }
 connect();
-const send=o=>ws&&ws.readyState===1&&ws.send(JSON.stringify(o));
+// Returns whether the frame actually went out. Callers MUST consult it --
+// a press made while the socket is down is a dropped press, not a sent one.
+const send=o=>{ if(!ws||ws.readyState!==1) return false;
+                ws.send(JSON.stringify(o)); return true; };
 $('full').onclick=()=>send({full:true});
 $('budget').onchange=e=>send({budget:+e.target.value});
 let sw=false,iv=false;
@@ -487,7 +492,7 @@ $('shot').onclick=()=>{
 /*__KEYMAP__*/
 const kb=$('kb');
 const mods={shift:false,fn:false,ctrl:false,alt:false,opt:false};
-let keysSent=0;
+let keysSent=0,keysDropped=0;
 
 function sendKey(k, forceShift){
   // Modifier keys latch locally instead of being transmitted: the firmware
@@ -510,8 +515,7 @@ function sendKey(k, forceShift){
   // modifier. Orange is the board's accent colour for special keys -- 'del' is
   // orange too, and del is plainly dedicated. Sending fn here would make the
   // browser's press differ from a physical one.
-  send({t:'key',r:k.r,c:k.c,shift:sh,fn:mods.fn});
-  noteSent(k.r,k.c);
+  noteSent(k.r,k.c, send({t:'key',r:k.r,c:k.c,shift:sh,fn:mods.fn}));
   // Shift and fn are one-shot, matching how you'd physically chord them.
   if(mods.shift||mods.fn){mods.shift=false;mods.fn=false;renderMods()}
 }
@@ -582,7 +586,23 @@ requestAnimationFrame(fitKeyboard);
 // Browser-side coverage. The device tracks the same thing; comparing the two
 // numbers is what separates "browser never sent it" from "device never got it".
 const sentMask=new Set();
-function noteSent(r,c){
+function noteSent(r,c,ok){
+  // MY BUG: this incremented unconditionally, and every caller invoked it
+  // immediately after send() without consulting send()'s return. send() is
+  //   ws && ws.readyState===1 && ws.send(...)
+  // which yields FALSE and transmits nothing when the socket is closed or
+  // still connecting -- yet "keys sent" ticked up and the cap lit 'hit'
+  // exactly as if it had gone out.
+  //
+  // The comment directly above this function says these counters exist to
+  // separate "browser never sent it" from "device never got it". They could
+  // not: the browser counted keys it had dropped on the floor. During a
+  // reconnect -- the 1200 ms window after any socket close -- every press is
+  // silently discarded while the UI reports success. That is the whole
+  // "control does not work" symptom, and it is why it looked like a device
+  // problem rather than a page problem.
+  if(!ok){ keysDropped++; const d=$('kdrop'); d.textContent=keysDropped;
+           d.className='bad'; return; }
   keysSent++; $('ksent').textContent=keysSent;
   sentMask.add(r+','+c);
   $('kcov').textContent=sentMask.size+'/56';
@@ -700,8 +720,7 @@ $('sweep').onclick=async e=>{
   const keys=window.KEYMAP.flat();
   for(const k of keys){
     if(ws.readyState!==1) break;
-    send({t:'key',r:k.r,c:k.c,shift:false,fn:false});
-    noteSent(k.r,k.c);
+    noteSent(k.r,k.c, send({t:'key',r:k.r,c:k.c,shift:false,fn:false}));
     const el=document.querySelector(`.key[data-rc="${k.r},${k.c}"]`);
     if(el){el.classList.add('dn');setTimeout(()=>el.classList.remove('dn'),90)}
     await new Promise(r=>setTimeout(r,70));   // 14/s vs ~1000/s drain: 70x headroom
@@ -776,8 +795,7 @@ addEventListener('keydown',e=>{
   else if(e.key.length===1)    spec=byChar[e.key];
   if(!spec) return;
   e.preventDefault();
-  send({t:'key',r:spec.r,c:spec.c,shift:spec.shift,fn:fn});
-  noteSent(spec.r,spec.c);
+  noteSent(spec.r,spec.c, send({t:'key',r:spec.r,c:spec.c,shift:spec.shift,fn:fn}));
 });
 
 </script></body></html>
