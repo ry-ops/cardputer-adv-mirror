@@ -1,4 +1,4 @@
-# Cardputer ADV — Browser Display Mirror
+# Cardputer ADV — Display Mirror
 
 **View and control** an **M5Stack Cardputer ADV** from a web browser, over WiFi.
 Implements **ADR 0002** (non-invasive GRAM readback) with key injection on top.
@@ -16,9 +16,7 @@ Browse to the IP printed on the device screen.
 > If control seems to need the cable, you're on a build from before
 > [ADR 0037](docs/adr/0037-control-over-wifi.md); see **Control over WiFi** below.
 
-![Cardputer ADV on-device screen](docs/images/screen.png)
-
-![Browser on-screen keyboard](docs/images/keyboard.png)
+## Updated Images Coming Soon!
 
 The browser page renders the mirrored display alongside a full on-screen
 keyboard matching the ADV's physical 4x14 layout — click keys directly to send
