@@ -1,5 +1,8 @@
 # Cardputer ADV — Display Mirror
 
+![Version](https://img.shields.io/badge/Version-0.1.0-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 **View and control** an **M5Stack Cardputer ADV** from a web browser, over WiFi.
 Implements **ADR 0002** (non-invasive GRAM readback) with key injection on top.
 
@@ -193,3 +196,7 @@ Regenerate assets after editing `web/index.html`:
 ```bash
 python3 tools/gen_web_assets.py && ./tools/pio.sh run -e cardputer-adv
 ```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
