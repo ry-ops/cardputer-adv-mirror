@@ -193,6 +193,27 @@ bool Mirror::begin(const Config& cfg)
         r->addHeader("Content-Encoding", "gzip");
         req->send(r);
     });
+    // The Stamp-S3A label photo gets its OWN route rather than a base64 data:
+    // URI in the page. Base64 costs 33% and is already-compressed bytes, so it
+    // would inflate the gzipped page by ~22 KB of incompressible payload on
+    // every single load. As a separate resource the browser caches it, and the
+    // page stays small. WebP is served as-is -- do NOT add Content-Encoding
+    // here, the format is already compressed and double-encoding it would only
+    // cost CPU on a device whose whole budget is measured in ms per tile.
+    s_server->on("/stamp.webp", HTTP_GET, [](AsyncWebServerRequest* req) {
+        auto* r = req->beginResponse_P(200, "image/webp",
+                                       kStampWebp, kStampWebpLen);
+        r->addHeader("Cache-Control", "public, max-age=31536000, immutable");
+        req->send(r);
+    });
+    // The CARDPUTER ADV panel, same reasoning (ADR 0035). It supersedes a CSS
+    // reconstruction that was measured correctly and still read as a drawing.
+    s_server->on("/advlabel.webp", HTTP_GET, [](AsyncWebServerRequest* req) {
+        auto* r = req->beginResponse_P(200, "image/webp",
+                                       kAdvLabelWebp, kAdvLabelWebpLen);
+        r->addHeader("Cache-Control", "public, max-age=31536000, immutable");
+        req->send(r);
+    });
     s_server->begin();
 
     forceFullFrame();

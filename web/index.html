@@ -63,15 +63,51 @@ button.on{border-color:var(--ok);color:var(--ok)}
 .key.hit .dome::after{box-shadow:0 0 0 2px #3fb950}
 /* Top edge: BtnG0, the OFF/ON slide switch, microSD, BtnRst, IR on G44 --
  * physically on the top face, so absent from any front-on view of the board. */
-#topedge{display:flex;align-items:center;gap:8px;background:#ebebeb;border:1px solid #b9b9b9;border-radius:8px;padding:6px 9px;width:max-content;max-width:100%;flex-wrap:wrap;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;font-size:11px;color:#15181c}
-#topedge .tlbl{font-weight:700;color:#e6531f;letter-spacing:.04em}
-#topedge .tbtn{background:#f4f4f4;color:#15181c;border:1px solid #9a9a9a;border-radius:5px;padding:4px 9px;font:inherit;font-weight:700;cursor:pointer}
-#topedge .tbtn:hover{border-color:#e6531f;color:#e6531f}
-#topedge .tbtn.rst{border-color:#c0503a;color:#a8331c}
-#topedge .tinfo{color:#5a5a5a;font-size:10px}
+/* Top-edge buttons, rendered as tabs protruding from the case's top edge.
+ * They are NOT inside the case: the free band between the case top and the
+ * recessed deck is 3.2% of case height -- 6px at a 320px viewport -- which
+ * cannot hold a pressable target. Protruding upward also matches how they sit
+ * on the physical top face. See ADR 0029.
+ * The x-positions are NOT measured: the reference photo is front-on, so the
+ * top face does not appear in it. Order follows the documented top-edge layout
+ * (BtnG0 ... slide switch ... microSD ... BtnRst ... IR), nothing finer. */
+#topedge{position:absolute;left:0;top:0;width:100%;height:0;z-index:3}
+#topedge .tbtn{position:absolute;bottom:0;
+  /* Proportionally these tabs are 0.020 of case width -- 5.8px at a 320px
+   * viewport, far below a pressable target. Scaling faithfully would make the
+   * only two hardware buttons on the page unusable on a phone, so height and
+   * width take a floor. Fidelity loses to hittability here. */
+  width:max(34px, calc(var(--cw)*0.0552));height:max(22px, calc(var(--cw)*0.020));
+  /* Sampled from the top-face photo: cap #c4c4c4 seated in a black slot,
+   * raised collar #dcdedd around it. Radius ~0.15 of cap width. */
+  background:linear-gradient(#cdcdcd,#c4c4c4);border:1px solid #8e9190;
+  border-bottom:0;
+  border-radius:calc(var(--cw)*0.008) calc(var(--cw)*0.008) 0 0;
+  box-shadow:0 -1px 2px #00000026, inset 0 1px 0 #e4e4e4,
+             -2px 0 0 #1a1a1a, 2px 0 0 #1a1a1a;
+  padding:0;font-size:0;cursor:pointer}
+/* MEASURED from the top-face photo (7_f8c26a68-*.webp), superseding the
+ * ordering guess in ADR 0029. That photo is MIRRORED relative to the front
+ * view -- the S3A sticker sits at 4.3-30.6% there vs 68.4-97.6% in the front
+ * photo, and the CARDPUTER ADV silk reads reversed -- so top-view x maps to
+ * front-view as (1 - x). Reading the doc's top-edge order straight into a
+ * front view had the two buttons on the wrong sides. See ADR 0030. */
+#topedge #btng0{left:71.1%}
+#topedge #btnrst{left:15.3%}
+#topedge .tbtn:hover{background:linear-gradient(#fff,#eee);border-color:var(--accent)}
+#topedge .tbtn:active{transform:translateY(1px)}
+#topedge .tbtn.rst{border-color:#bda29b}
+/* BtnRst is inert (drives EN, cuts SoC power -- firmware cannot actuate it).
+ * It must not silently do nothing, so the click surfaces a transient note.
+ * Hidden until triggered, so it adds no standing text to the case. */
+#g0state{position:absolute;left:50%;transform:translateX(-50%);
+  bottom:calc(var(--cw)*0.026);white-space:nowrap;
+  background:#1c2128;color:#e6edf3;border:1px solid #3d444d;border-radius:5px;
+  padding:3px 8px;font-size:calc(var(--cw)*0.013);pointer-events:none;
+  opacity:0;transition:opacity .15s}
+#g0state.show{opacity:1}
 .ar{color:var(--ok);font-weight:600}
-#klog{margin:0;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;font:11px/1.6 ui-monospace,Menlo,monospace;color:var(--dim);min-height:20px;min-width:260px;white-space:pre}
-.note{max-width:760px;color:var(--dim);font-size:11px;border-left:2px solid var(--line);padding-left:10px}
+
 .note code{color:var(--accent)}
 #sd{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;max-width:760px;width:100%}
 #sd h2{font-size:12px;font-weight:600;margin:0 0 8px;letter-spacing:.02em;display:flex;align-items:center;gap:8px}
@@ -88,38 +124,259 @@ button.on{border-color:var(--ok);color:var(--ok)}
 #fmt{border-color:var(--err);color:var(--err)}
 #fmt:hover{background:var(--err);color:#0d1117}
 #fmt:disabled{opacity:.4;cursor:not-allowed;background:var(--panel);color:var(--err)}
+/* ---- Hamburger menu -------------------------------------------------------
+ * Occasional controls and streaming diagnostics live behind this. What stays
+ * in the bar is what you must see WITHOUT clicking: connection state, zoom,
+ * frame budget, and any mode that changes what your physical keyboard does.
+ */
+.menuwrap{position:relative;display:inline-block}
+#menubtn{font-size:15px;line-height:1;padding:4px 9px}
+#menubtn.open{border-color:var(--accent);color:var(--accent)}
+/* Height: the panel is ~270px of content, which clips below the fold on a
+ * 568px-tall phone. Cap it to the viewport and scroll rather than letting the
+ * Stream numbers fall off the bottom edge with no indication they exist.
+ * Width: 250px fixed can overhang the left edge on a ~320px screen, since the
+ * panel grows leftward from the button; clamp it to the viewport. */
+#menu{position:absolute;right:0;top:calc(100% + 6px);z-index:50;width:250px;
+  max-width:calc(100vw - 24px);max-height:calc(100vh - 140px);overflow-y:auto;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:10px;box-shadow:0 8px 24px #0009;text-align:left}
+#menu[hidden]{display:none}
+#menu .sect{color:var(--dim);font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;margin:10px 0 6px}
+#menu .sect:first-child{margin-top:0}
+#menu .row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+#menu .row button{flex:1 1 auto}
+/* Stats keep updating while the menu is open -- that is when you are looking
+ * at them. A grid keeps the numbers on a stable column so a changing value
+ * does not reflow its neighbours. */
+#menu .mstat{display:grid;grid-template-columns:1fr auto;gap:2px 10px;
+  font-size:11px;color:var(--dim)}
+#menu .mstat b{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
+/* Modal-state badge: capture rewires the user's PHYSICAL keyboard, so it must
+ * be visible with the menu shut. Hidden until active. */
+#capbadge{display:none;align-items:center;gap:5px;font-size:11px;
+  color:var(--ok);border:1px solid var(--ok);border-radius:6px;padding:4px 8px}
+#capbadge.on{display:inline-flex}
+/* ---- Cardputer ADV mockup -------------------------------------------------
+ * Every proportion is MEASURED from the product photo (1200x1200 front-on),
+ * not styled by eye. Case bbox 851x547 -> aspect 1.5558. Fractions of case:
+ *   glass  left .2479  top .0530  w .2973  h .2779
+ *   keys   left .0306  top .4004  w .9365  h .5356   (14 domes, pitch 58.38px
+ *                                                     sd 0.35 -> no wide key)
+ *   cell   h/w 1.3189   legend .4805 of cell h   dome 24px of 77px pitch
+ * Sampled colours: case #e5e7e5, lower case #d3d3d3, inter-row #bfbfbf,
+ * legend #e1e7e3, dome #1e1e1e, bezel #0a0c0b.
+ * ONE variable drives the whole thing: --cw. Everything else is calc() off it,
+ * so the mockup scales as a rigid unit and cannot drift out of proportion.
+ */
+#dev{--cw:min(820px, calc(100vw - 28px));
+  /* Top margin clears the BtnG0/BtnRst tabs, which protrude ABOVE the case
+     top edge and would otherwise be clipped against whatever sits above. */
+  position:relative;margin-top:max(22px, calc(var(--cw)*0.020));width:var(--cw);height:calc(var(--cw)/1.5558);
+  background:linear-gradient(#eceeec 0%,#e5e7e5 38%,#dcdedc 62%,#d3d3d3 100%);
+  border-radius:calc(var(--cw)*0.022);
+  box-shadow:0 14px 34px #000a, inset 0 1px 0 #fff, inset 0 -2px 4px #0002;
+  border:1px solid #c2c4c2;box-sizing:border-box}
+
+/* Recessed upper deck the display and stickers sit on. */
+#devtop{position:absolute;left:2.2%;top:3.2%;width:95.6%;height:33.5%;
+  background:linear-gradient(#e9ebe9,#dfe1df);
+  border-radius:calc(var(--cw)*0.012);box-shadow:inset 0 1px 2px #0000001a}
+
+/* Display glass: measured rectangle. The canvas is positioned INSIDE this. */
+#devscreen{position:absolute;left:24.79%;top:5.30%;width:29.73%;height:27.79%;
+  background:#0a0c0b;border-radius:calc(var(--cw)*0.006);
+  box-shadow:inset 0 0 0 2px #17191a, 0 1px 3px #0006;
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+/* The 240x135 panel is 1.778 but the glass module is 1.664 -- the real bezel is
+ * not symmetric. Fit by WIDTH and centre, which is what the hardware does. */
+#devscreen canvas{width:100%;height:auto;border-radius:0}
+
+/* Left silk label and right module sticker: simplified, they are printed
+ * artwork and carry no state. */
+/* MEASURED (ADR 0031). The earlier box was eyeballed and ran 2.2% too low at
+ * the bottom, which is what buried the screws. Isolating it needed the scan
+ * bounded above the keyboard strip -- that strip is also white, and an
+ * unbounded row profile locks onto it instead (returns y 44.79%). */
+/* The CARDPUTER ADV label is a PHOTOGRAPH, superseding the CSS reconstruction
+ * of ADR 0034. That version was measured correctly -- bracket geometry, cap
+ * heights, the 1.158 width correction -- and still did not read as the real
+ * label, because the things it could not carry are the ones the eye uses:
+ * M5's actual typeface, the printing's slight ink spread, the panel's texture
+ * and its soft edge shadow. Measuring the right quantities is not the same as
+ * reproducing the artefact. See ADR 0035.
+ *
+ * Box MEASURED off the panel's own dark border groove, keying on a local dark
+ * line with BRIGHTER pixels on both sides -- a plain threshold does not work
+ * here (panel fill 232 vs surrounding plastic 214 is only 17 levels apart, and
+ * the plastic has a brightness gradient toward the screen, so any global cut
+ * either leaks into the case or clips a corner):
+ *     x 1.880-22.914%   y 2.559-30.713%
+ * The old CSS box was 2.120-23.040% x 2.740-31.080%, close but not measured.
+ *
+ * object-fit:fill -- the box IS the crop's aspect (1.1613 vs 1.1624), so there
+ * is nothing to letterbox. */
+#devlabel{position:absolute;left:1.880%;top:2.559%;width:21.034%;height:28.154%;
+  border-radius:calc(var(--cw)*0.005);overflow:hidden;
+  box-shadow:0 1px 2px #0000001f}
+#devlabel img{width:100%;height:100%;display:block;object-fit:fill}
+/* The Stamp-S3A module is a PHOTOGRAPH, not CSS (ADR 0033). It carries the
+ * real pinout -- GPIO numbers, the BTN/USB legends, the bus-pin column -- and
+ * this is a tool whose job is talking to those pins, so inventing plausible
+ * artwork here would put wrong pin numbers on screen. The previous rainbow
+ * gradient was decorative and admitted as such.
+ *
+ * Box MEASURED from the product photo off the module's black bezel, with the
+ * scan bounded right of the glass (an unbounded dark scan locks onto the
+ * screen edge and returns x from 62.5%): x 68.39-99.18%, y 2.19-36.38%.
+ * The old box was eyeballed and ran 2.2% short at the top and 4.7% at the
+ * bottom. Its left edge, 68.4%, was already right -- an independent check on
+ * the measurement.
+ *
+ * object-fit:fill, not contain: the box IS the crop's own aspect ratio
+ * (263x188 = 1.399), so there is nothing to letterbox, and `contain` would
+ * silently hide a future aspect mismatch instead of showing it. */
+#devsticker{position:absolute;left:68.39%;top:2.19%;width:30.79%;height:34.19%;
+  border-radius:calc(var(--cw)*0.004);overflow:hidden}
+#devsticker img{display:block;width:100%;height:100%;object-fit:fill}
+#devm5{position:absolute;left:60.5%;top:11%;font-size:calc(var(--cw)*0.045);
+  font-weight:800;color:#d7d9d7;text-shadow:0 1px 0 #fff,0 -1px 1px #0000001f;
+  letter-spacing:-.02em;pointer-events:none}
+
+/* ---- Front-face detail, all MEASURED from the front photo (ADR 0030) ------
+ * screws  cx 15.16% / 64.75%, cy 32.81%, d 3.47% of case width
+ * mic     icon 9.87-11.05% x, 22.85-27.06% y; grille slots cx ~10.4%
+ * silk    cyan registration brackets span 2.59-22.21% x, 4.57-21.76% y
+ * The S3A sticker is a dense multicolour pinout label; it is rendered as a
+ * tinted panel with a colour band rather than reproduced -- the real artwork
+ * is unreadable below ~200px and faking its text would be invented detail. */
+
+/* The mic is printed ON the label (confirmed at magnification), so it is
+ * emitted after it. Orange dot measured x 9.87-11.05%, y 22.85-27.06%,
+ * colour (243,103,50); the dark cradle around it extends the whole icon to
+ * x 8.93-11.87%, y 22.85-29.43%. */
+/* MEASURED from the product photo, correcting two errors at once (ADR 0031):
+ * the slots sit at y 31.81-35.47%, BELOW the label's bottom edge (31.08%) on
+ * bare plastic -- the old 26.0% put them under the label, where they were
+ * invisible regardless of colour. And they are BLACK rounded pills, not the
+ * orange I had assumed by association with the mic; the darkest 15% of those
+ * pixels reads (0,0,0) against (206,206,206) plastic. */
+#devgrille{position:absolute;left:9.40%;top:31.81%;width:2.01%;height:3.66%;
+  pointer-events:none}
+#devgrille i{position:absolute;top:0;height:100%;width:29.9%;background:#0a0a0a;
+  border-radius:calc(var(--cw)*0.004)}
+#devgrille i.a{left:0}
+#devgrille i.b{left:70.1%}
+
+
+/* Keyboard well. #kb is placed at the measured rectangle and its own --ku is
+ * driven from case width, NOT the viewport, so keys stay locked to the case. */
+#devkb{position:absolute;left:3.06%;top:40.04%;width:93.65%}
+#dev #kb{background:transparent;border:0;border-radius:0;padding:0;
+  width:100%;max-width:none}
+#dev .krow{grid-template-columns:repeat(14,1fr)}
+
+/* Zoom control: on the case, bottom-right of the deck, near the display. */
+/* Zoom sits on the bare deck strip between the glass (ends 54.4%) and the
+ * S3A sticker (starts 68.4%) -- 14% of case width -- and below the M5 logo
+ * band (11-18%). It is NOT in the gap between deck and keyboard: that gap is
+ * 3.34% of case height and the button is taller than it at EVERY viewport
+ * width, so it would have overlapped the number row. See ADR 0028. */
+#zoombtn{position:absolute;left:55.4%;top:23%;width:12.2%;z-index:4;
+  font-size:calc(var(--cw)*0.016);line-height:1.25;padding:3px 0;border-radius:5px;
+  background:#f2f4f2;color:#3a3d3a;border:1px solid #c2c4c2;text-align:center;
+  white-space:nowrap;overflow:hidden}
+#zoombtn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Popped-out state: the large canvas returns to #shell above the mockup and
+ * the glass shows a placeholder rather than an empty black hole. */
+#devscreen.out::after{content:'zoomed out';color:#4a4f55;
+  font:600 calc(var(--cw)*0.016)/1 ui-monospace,monospace;letter-spacing:.08em}
+#shell[hidden]{display:none}
 </style></head><body>
 <h1>M5Stack Cardputer ADV — Display Mirror</h1>
 <div class="sub">ADR 0002 · GRAM readback · 240×135 RGB565</div>
-<div id="shell"><canvas id="c" width="240" height="135"></canvas></div>
+<!-- Mockup. Proportions measured from the product photo -- see ADR 0028.
+     The canvas MOVES between #devscreen (inset) and #shell (zoomed out); it is
+     never duplicated, because two live canvases would double per-frame draw
+     cost on a stream already budgeted in ms/tile. -->
+<div id="dev">
+  <div id="topedge">
+    <button class="tbtn" id="btng0" title="BtnG0 — GPIO 0, the only top button firmware can read (M5.BtnA)" aria-label="BtnG0"></button>
+    <button class="tbtn rst" id="btnrst" title="BtnRst — drives the EN line, cutting power to the SoC. Physical only." aria-label="BtnRst"></button>
+  </div>
+  <div id="g0state" role="status"></div>
+  <div id="devtop"></div>
+  <!-- PAINT ORDER IS LOAD-BEARING: the label is a solid white panel and must be
+       emitted BEFORE the screws and grille, which sit on bare plastic BELOW its
+       bottom edge and were previously buried under it. The mic is the one detail
+       printed ON the label, so it must come AFTER. Verified against the product
+       photo at magnification -- see ADR 0031. -->
+  <!-- Photograph, on its own route like the S3A module (ADR 0035). The screw
+       that overlaps the panel's lower right in the product shot is painted out
+       of the crop, since the page draws no screws. -->
+  <div id="devlabel"><img src="/advlabel.webp" alt="CARDPUTER ADV label"
+       width="180" height="155" decoding="async"></div>
+  <div id="devgrille"><i class="a"></i><i class="b"></i></div>
+    <div id="devm5">M5</div>
+  <!-- Served from its own firmware route, not a base64 data: URI -- see
+       ADR 0033. The alt text names the part rather than describing the
+       picture, because that is what a reader actually needs from it. -->
+  <div id="devsticker"><img src="stamp.webp" alt="M5Stack Stamp-S3A module label with GPIO pinout"
+       width="263" height="188" decoding="async"></div>
+  <div id="devscreen"><canvas id="c" width="240" height="135"></canvas></div>
+  <button id="zoombtn" title="Pop the display out of the case, and back">zoom</button>
+  <div id="devkb"><div id="kb"></div></div>
+</div>
+<div id="shell" hidden></div>
+<!-- The visible bar holds only what you cannot afford to click for: link
+     state, zoom, the frame budget (it changes what you are watching), and the
+     capture badge, because capture rewires the user's PHYSICAL keyboard and a
+     hidden mode toggle is how you lose keystrokes to the wrong window. -->
 <div class="bar">
   <span><span id="dot"></span><span id="conn">connecting…</span></span>
   <select id="zoom"><option value="2">2×</option><option value="3" selected>3×</option><option value="4">4×</option><option value="5">5×</option></select>
-  <button id="full">Full refresh</button>
-  <button id="swap">Swap R/B</button>
-  <button id="inv">Invert</button>
-  <button id="shot">Save PNG</button>
   <select id="budget">
     <option value="2000">Gentle (2ms)</option>
     <option value="4500" selected>Normal (4.5ms)</option>
     <option value="9000">Fast (9ms)</option>
     <option value="20000">Aggressive (20ms)</option>
   </select>
+  <span id="capbadge">⌨ capturing keys<button id="capoff" style="padding:1px 6px;font-size:11px">stop</button></span>
+  <span class="menuwrap">
+    <button id="menubtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu" title="Display, capture and diagnostics">☰</button>
+    <div id="menu" hidden role="menu" aria-label="Display and diagnostics">
+      <div class="sect">Display</div>
+      <div class="row">
+        <button id="full">Full refresh</button>
+        <button id="shot">Save PNG</button>
+      </div>
+      <div class="row">
+        <button id="swap">Swap R/B</button>
+        <button id="inv">Invert</button>
+      </div>
+      <div class="sect">Keyboard</div>
+      <div class="row">
+        <button id="hwkb">Capture my keyboard</button>
+      </div>
+      <div class="row">
+        <button id="sweep">Test all 56 keys</button>
+      </div>
+      <div class="sect">Stream</div>
+      <div class="mstat">
+        <span>fps</span><b id="fps">0</b>
+        <span>tiles/s</span><b id="tps">0</b>
+        <span>KiB/s</span><b id="kbs">0</b>
+        <span>tiles</span><b id="tot">0</b>
+        <span>self-test</span><b id="st">—</b>
+        <span>keys sent</span><b id="ksent">0</b>
+        <span>coverage</span><b id="kcov">0/56</b>
+      </div>
+    </div>
+  </span>
 </div>
-<div class="stat">
-  <span>fps <b id="fps">0</b></span><span>tiles/s <b id="tps">0</b></span>
-  <span>KiB/s <b id="kbs">0</b></span><span>self-test <b id="st">—</b></span>
-  <span>tiles <b id="tot">0</b></span>
-</div>
-<div class="bar">
-  <button id="hwkb">Capture my keyboard</button>
-  <button id="sweep">Test all 56 keys</button>
-  <span style="color:var(--dim);font-size:11px">mods <b id="modstate">none</b></span>
-  <span style="color:var(--dim);font-size:11px">sent <b id="ksent">0</b></span>
-  <span style="color:var(--dim);font-size:11px">coverage <b id="kcov">0/56</b></span>
-</div>
-<pre id="klog"></pre>
-<div id="kb"></div>
+
 <!-- The ADV's top face carries controls that appear in NO front-on photo of the
      board: BtnG0, the OFF/ON slide switch, the microSD slot, BtnRst, and the IR
      LED on G44. Only BtnG0 is readable by firmware -- M5Unified registers a
@@ -127,13 +384,6 @@ button.on{border-color:var(--ok);color:var(--ok)}
      EN line, which cuts power to the SoC; there is no way for software to
      "press" it, so it is shown as a physical-only control rather than given a
      button that would silently do nothing. -->
-<div id="topedge">
-  <span class="tlbl">TOP EDGE</span>
-  <button class="tbtn" id="btng0" title="GPIO 0 — the only top button firmware can read (M5.BtnA)">BtnG0</button>
-  <span class="tinfo">OFF/ON slide · microSD (SCK:G40 MISO:G39 MOSI:G14 CS:G12) · IR:G44</span>
-  <button class="tbtn rst" id="btnrst" title="Drives the EN line — cuts power to the SoC. Physical only.">BtnRst</button>
-  <span class="tinfo" id="g0state">G0 idle</span>
-</div>
 <div id="sd">
   <h2>SD Card <span id="sdstate">checking…</span></h2>
   <div class="sdgrid">
@@ -155,34 +405,42 @@ button.on{border-color:var(--ok);color:var(--ok)}
     <button id="fmt">Format — erases card</button>
   </div>
 </div>
-<div class="note">
-  <b>Keyboard is live.</b> The 4×14 layout is generated from M5Cardputer's own
-  <code>_key_value_map</code>, so it cannot drift from the hardware. Clicking a key sends its
-  <i>matrix coordinate</i> — the firmware decodes it through the same table a physical
-  press uses. Hover a key to see its row/column.<br>
-  <b>Every cap shows both legends.</b> The small dim symbol above each key is the
-  shifted character — click it directly to send that symbol; no need to latch
-  <code>shift</code> first. All 56 keys and 107 legends are reachable, and the
-  layout scales to fit all 14 columns at any panel width.<br>
-  <b>Arrows:</b> the ADV has four <i>dedicated</i> arrow keys — an inverted-T,
-  marked <span class="ar">↑</span> <span class="ar">←</span> <span class="ar">↓</span>
-  <span class="ar">→</span> above. No <code>fn</code> is needed: press them directly,
-  or use <code>Capture my keyboard</code> and press real arrow keys.
-  They report as <code>;</code> <code>,</code> <code>.</code> <code>/</code> because
-  M5Cardputer reuses the original Cardputer's value map — the keycap legend and the
-  reported character differ, which is a library detail, not a missing key.<br>
-  If colors look wrong, try <code>Swap R/B</code> or <code>Invert</code>: the panel is
-  read back as RGB888 and byte order varies between ST7789 revisions. A self-test
-  well under 100% means 3-wire GRAM readback is unreliable on this unit — see ADR 0001.
-</div>
+<!-- The explanatory note block that stood here was removed at the user's
+     request. The facts it carried are not lost: the dual-glyph and arrow-key
+     behaviour is documented in ADR 0019, the colour-order and GRAM-readback
+     caveats in ADR 0001, and both remain covered by assertions in
+     tools/test_dom_keyboard.cjs. Do not reinstate it as page text. -->
 <script>
 const cv=document.getElementById('c'),cx=cv.getContext('2d',{willReadFrequently:true});
 cx.imageSmoothingEnabled=false;
 let W=240,H=135,TW=60,TH=45,COLS=4;
 let img=cx.createImageData(TW,TH);
 const $=i=>document.getElementById(i);
-function zoom(){const z=+$('zoom').value;cv.style.width=(W*z)+'px';cv.style.height=(H*z)+'px';}
-$('zoom').onchange=zoom;zoom();
+/* Inset <-> popped-out. The canvas ELEMENT MOVES between hosts; it is never
+ * cloned and never duplicated. A second live canvas would double the per-frame
+ * blit on a stream whose whole design is a millisecond tile budget, and the two
+ * copies would drift whenever one missed a tile.
+ * Inset, the canvas fills the measured glass rectangle via CSS (width:100%), so
+ * the zoom SELECT only applies when popped out. */
+let popped=false;
+function zoom(){
+  const z=+$('zoom').value;
+  if(popped){cv.style.width=(W*z)+'px';cv.style.height=(H*z)+'px';}
+  else {cv.style.width='';cv.style.height='';}
+}
+function setPopped(on){
+  popped=on;
+  const host = on ? $('shell') : $('devscreen');
+  host.appendChild(cv);                 // moves the node, does not copy it
+  $('shell').hidden = !on;
+  $('devscreen').classList.toggle('out', on);
+  $('zoombtn').textContent = on ? 'inset' : 'zoom';
+  $('zoom').disabled = !on;             // the select is meaningless when inset
+  zoom();
+}
+$('zoom').onchange=zoom;
+$('zoombtn').onclick=()=>setPopped(!popped);
+setPopped(false);
 cx.fillStyle='#000';cx.fillRect(0,0,W,H);
 
 let tiles=0,bytes=0,frames=0,total=0;
@@ -264,7 +522,7 @@ const kb=$('kb');
 const mods={shift:false,fn:false,ctrl:false,alt:false,opt:false};
 let keysSent=0;
 
-function sendKey(k, forceShift, asArrow){
+function sendKey(k, forceShift){
   // Modifier keys latch locally instead of being transmitted: the firmware
   // needs them as FLAGS accompanying a key, which is how the hardware reports
   // them too (KeysState.shift/.fn alongside the character).
@@ -277,16 +535,16 @@ function sendKey(k, forceShift, asArrow){
   // symbol specifically -- regardless of the latch state. The device still
   // receives a coordinate plus a shift flag, exactly as a physical press does.
   const sh = forceShift || mods.shift;
-  // asArrow affects the LOG LABEL ONLY -- it does not add a modifier. The four
-  // arrow glyphs are printed in the same orange as the fn cap, which I first
-  // read as "these are fn-layer chords". They are not: ADR 0019 established the
-  // ADV has four DEDICATED arrow keys that report ';' ',' '.' '/' because
-  // M5Cardputer reuses the original keymap, and the 56-key sweep proves they
-  // land without any modifier. Orange is the board's accent colour for special
-  // keys -- 'del' is orange too, and del is plainly dedicated. Sending fn here
-  // would make the browser's press differ from a physical one.
+  // NO modifier is added for the arrow caps. Their glyphs are printed in the
+  // same orange as the fn cap, which I first read as "these are fn-layer
+  // chords". They are not: ADR 0019 established the ADV has four DEDICATED
+  // arrow keys that report ';' ',' '.' '/' because M5Cardputer reuses the
+  // original keymap, and the 56-key sweep proves they land without any
+  // modifier. Orange is the board's accent colour for special keys -- 'del' is
+  // orange too, and del is plainly dedicated. Sending fn here would make the
+  // browser's press differ from a physical one.
   send({t:'key',r:k.r,c:k.c,shift:sh,fn:mods.fn});
-  noteSent(k.r,k.c,asArrow&&k.cap?k.cap:(sh?k.hi:k.lo),sh,mods.fn);
+  noteSent(k.r,k.c);
   // Shift and fn are one-shot, matching how you'd physically chord them.
   if(mods.shift||mods.fn){mods.shift=false;mods.fn=false;renderMods()}
 }
@@ -302,14 +560,30 @@ function fitKeyboard(){
   // item, so its own clientWidth is a function of the unit being computed -- a
   // feedback loop that once latched at the minimum and collapsed the board to a
   // single column (ADR 0021). The viewport is the independent quantity.
-  const room=(document.documentElement.clientWidth||900)-32;
-  const avail=Math.max(300,room)-20;
+  // Inside the mockup the keyboard is locked to the CASE, not the viewport:
+  // #devkb is 93.65% of case width and .krow uses 1fr columns, so the grid
+  // already tracks the case. --ku still drives FONT sizes on the caps, so it
+  // must be derived from the rendered case width or the legends will not scale
+  // with the shell they sit in.
+  const dev=$('dev');
+  const room=dev ? dev.getBoundingClientRect().width*0.9365
+                 : (document.documentElement.clientWidth||900)-32;
+  const avail=Math.max(300,room);
   // Rows are edge-to-edge with NO gap, matching the photo: the legend bar is
   // continuous across a row. So the width is exactly 14 units.
   const unit=Math.floor(avail/14);
-  kb.style.setProperty('--ku',Math.max(16,Math.min(46,unit))+'px');
+  // The old ceiling of 46 existed to stop a VIEWPORT-driven keyboard growing
+  // without bound. Inside the mockup that job belongs to --cw (case width is
+  // capped at 820px), and keeping the 46 here would clamp --ku at every desktop
+  // width >=768px while the case stayed 820px wide -- undersized legends in
+  // full-size caps. Floor stays: a sub-16px key is not clickable.
+  const cap = dev ? 999 : 46;
+  kb.style.setProperty('--ku',Math.max(16,Math.min(cap,unit))+'px');
 }
 addEventListener('resize', fitKeyboard);
+// The case width is only known after layout, so re-fit once the first
+// frame has been laid out; calling it inline reads width 0 on some paths.
+requestAnimationFrame(fitKeyboard);
 
 /* Top-edge buttons. BtnG0 is injected as a BUTTON event, not a key event: it is
  * a GPIO, not a matrix coordinate, so pushing it through the keyboard path would
@@ -322,25 +596,29 @@ addEventListener('resize', fitKeyboard);
  * hardware, so the click explains itself instead. */
 (function(){
   const g0=$('btng0'), rst=$('btnrst'), st=$('g0state');
+  /* Both notes are transient: the case carries no standing text, so a note
+   * appears on press and fades. BtnRst still explains rather than acting --
+   * a control that silently does nothing is worse than one that says why. */
+  let noteT=null;
+  function note(msg){
+    if(!st) return;
+    st.textContent=msg; st.classList.add('show');
+    clearTimeout(noteT); noteT=setTimeout(()=>st.classList.remove('show'),1800);
+  }
+  if(rst) rst.onclick=()=>note('BtnRst is physical only (cuts power via EN)');
   if(g0) g0.onpointerdown=e=>{e.preventDefault();
     send({t:'btn',b:'g0',ms:80});
-    if(st) st.textContent='G0 pressed \u2192 sent';
-  };
-  if(rst) rst.onclick=()=>{
-    if(st) st.textContent='BtnRst is physical only (cuts power via EN)';
+    note('G0 pressed \u2192 sent');
   };
 })();
 
 // Browser-side coverage. The device tracks the same thing; comparing the two
 // numbers is what separates "browser never sent it" from "device never got it".
 const sentMask=new Set();
-function noteSent(r,c,label,shift,fn){
+function noteSent(r,c){
   keysSent++; $('ksent').textContent=keysSent;
   sentMask.add(r+','+c);
   $('kcov').textContent=sentMask.size+'/56';
-  const line=`r${r} c${c} ${label}${shift?' +sh':''}${fn?' +fn':''}`;
-  const log=$('klog');
-  log.textContent=(line+'\n'+log.textContent).split('\n').slice(0,6).join('\n');
   const el=document.querySelector(`.key[data-rc="${r},${c}"]`);
   if(el) el.classList.add('hit');
 }
@@ -350,8 +628,8 @@ function renderMods(){
     const m=el.dataset.mod;
     el.classList.toggle('on', !!mods[m]);
   });
-  $('modstate').textContent =
-    Object.entries(mods).filter(([,v])=>v).map(([k])=>k).join('+') || 'none';
+  // No text readout: `.key.mod.on .lgd` already draws an amber ring on the
+  // latched cap, which is where the user is looking when they latch it.
 }
 
 if(!window.KEYMAP){
@@ -415,12 +693,13 @@ if(!window.KEYMAP){
       }
       if(k.cap){
         // The arrow is a third legend on a shared cap, printed in fn-orange.
-        // Clicking it sends fn+key, which is how the chord is produced on metal.
+        // It is a DEDICATED key (ADR 0019): clicking it sends the bare
+        // coordinate, no modifier -- same wire event as clicking the cap.
         const ar=document.createElement('span'); ar.className='fnl';
         ar.textContent=k.cap;
         // Same wire event as clicking the cap -- the arrow needs no modifier.
         ar.onpointerdown=e=>{e.preventDefault();e.stopPropagation();
-          el.classList.add('dn'); sendKey(k,false,true);};
+          el.classList.add('dn'); sendKey(k,false);};
         ar.onpointerup=()=>el.classList.remove('dn');
         lgd.appendChild(ar);
       }
@@ -455,7 +734,7 @@ $('sweep').onclick=async e=>{
   for(const k of keys){
     if(ws.readyState!==1) break;
     send({t:'key',r:k.r,c:k.c,shift:false,fn:false});
-    noteSent(k.r,k.c,k.lo,false,false);
+    noteSent(k.r,k.c);
     const el=document.querySelector(`.key[data-rc="${k.r},${k.c}"]`);
     if(el){el.classList.add('dn');setTimeout(()=>el.classList.remove('dn'),90)}
     await new Promise(r=>setTimeout(r,70));   // 14/s vs ~1000/s drain: 70x headroom
@@ -485,11 +764,36 @@ const ARROW={ArrowUp:';',ArrowDown:'.',ArrowLeft:',',ArrowRight:'/'};
 const byLabel={};
 if(window.KEYMAP) window.KEYMAP.forEach(r=>r.forEach(k=>{byLabel[k.lo]={r:k.r,c:k.c,shift:false}}));
 let hwCapture=false;
-$('hwkb').onclick=e=>{
-  hwCapture=!hwCapture;
-  e.target.classList.toggle('on',hwCapture);
-  e.target.textContent = hwCapture?'Capturing keys — click to stop':'Capture my keyboard';
-};
+function setCapture(on){
+  hwCapture=on;
+  $('hwkb').classList.toggle('on',on);
+  $('hwkb').textContent = on?'Capturing keys — click to stop':'Capture my keyboard';
+  // The badge lives OUTSIDE the menu on purpose: this mode swallows the user's
+  // real keystrokes, so its state must survive the menu closing.
+  $('capbadge').classList.toggle('on',on);
+}
+$('hwkb').onclick=()=>setCapture(!hwCapture);
+$('capoff').onclick=e=>{e.stopPropagation();setCapture(false)};
+
+/* Hamburger. Closes on outside click and on Escape -- a menu that only closes
+ * by re-clicking its own button strands itself over the keyboard, which is the
+ * thing the user is trying to reach.
+ */
+const menu=$('menu'), menubtn=$('menubtn');
+function setMenu(open){
+  menu.hidden=!open;
+  menubtn.classList.toggle('open',open);
+  menubtn.setAttribute('aria-expanded', open?'true':'false');
+}
+menubtn.onclick=e=>{e.stopPropagation();setMenu(menu.hidden)};
+menu.onclick=e=>e.stopPropagation();
+addEventListener('click',()=>setMenu(false));
+addEventListener('keydown',e=>{
+  // Escape closes the menu -- but ONLY when capture is off. With capture on,
+  // Escape belongs to the device, and stealing it would make the browser
+  // silently eat a key the firmware expects.
+  if(e.key==='Escape' && !hwCapture && !menu.hidden){setMenu(false)}
+});
 addEventListener('keydown',e=>{
   if(!hwCapture) return;
   let spec=null, fn=false;
@@ -506,8 +810,7 @@ addEventListener('keydown',e=>{
   if(!spec) return;
   e.preventDefault();
   send({t:'key',r:spec.r,c:spec.c,shift:spec.shift,fn:fn});
-  const kk=window.KEYMAP[spec.r][spec.c];
-  noteSent(spec.r,spec.c,spec.shift?kk.hi:kk.lo,spec.shift,fn);
+  noteSent(spec.r,spec.c);
 });
 
 /* ---------------- SD card panel ---------------- */

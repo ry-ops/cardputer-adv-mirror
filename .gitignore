@@ -1,2 +1,5 @@
 verify_codec
 .pio/
+
+# Real credentials — NEVER commit. Copy the .example.h and fill it in.
+include/wifi_credentials.h
