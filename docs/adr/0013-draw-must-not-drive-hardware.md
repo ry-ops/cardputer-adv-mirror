@@ -1,6 +1,6 @@
 # ADR 0013 — A draw function must not drive hardware
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** serial log flooded with SD init errors; heartbeat reported 0.0.0.0
 for 250 s while the AP was serving
 

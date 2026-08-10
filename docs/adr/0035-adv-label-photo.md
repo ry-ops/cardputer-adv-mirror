@@ -1,5 +1,7 @@
 # ADR 0035 — CARDPUTER ADV label becomes a photograph; CSS screws removed
 
+**Status:** Accepted — implemented (supersedes 0034)
+
 ## Context
 ADR 0034 kept the ADV label as CSS and argued the case: the S3A module label
 carries printed pinout data that cannot be authored without inventing GPIO

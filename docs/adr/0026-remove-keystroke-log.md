@@ -1,6 +1,6 @@
 # ADR 0026 — Remove the keystroke log; fix two false claims in the note
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** user: "can we remove the keystroke viewer. i don't need to see
 every keystroke validation. id=klog"
 

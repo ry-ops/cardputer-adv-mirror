@@ -1,6 +1,6 @@
 # ADR 0014 — The scan screen was matching against the wrong SSID
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** user reports RY-OPS still absent after the clean-scan fix (ADR 0011)
 
 ## The defect

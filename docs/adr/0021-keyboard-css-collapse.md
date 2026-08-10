@@ -1,6 +1,6 @@
 # ADR 0021 — The keyboard collapsed to one column: a self-referential CSS measure
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** user screenshot showed the keyboard rendered as a ~30px vertical
 sliver of overlapping fragments, plus a product photo of the intended layout.
 

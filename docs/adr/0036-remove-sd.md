@@ -1,5 +1,7 @@
 # ADR 0036 — Remove the SD card feature entirely
 
+**Status:** Accepted — implemented (supersedes 0008; SD support removed from the tree)
+
 ## Context
 The device has a microSD slot and the firmware grew a manager for it (ADR 0008):
 mount/unmount, capacity reporting, FS detection, and an explicit FATFS format

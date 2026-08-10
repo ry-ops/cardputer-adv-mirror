@@ -1,6 +1,6 @@
 # ADR 0023 — The lowercase hotspot SSID was a real bug, but not the one we hit
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** user: "wifi_credentials.h still uses the lowercase name ry-ops and
 includes the password. this was never updated. this was probably the root of our
 wifi issues earlier."

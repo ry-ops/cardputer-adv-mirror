@@ -1,6 +1,6 @@
 # ADR 0020 — Every legend is a key: dual-legend caps and a solved-for layout
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** user: "we're still missing keys... we need each and every button
 represented", followed by an explicit row-by-row enumeration.
 

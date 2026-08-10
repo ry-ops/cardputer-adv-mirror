@@ -1,6 +1,6 @@
 # ADR 0012 — Refuse to upload while the serial port is held
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** third upload failure from the same cause; this one erased the app
 
 ## The failure

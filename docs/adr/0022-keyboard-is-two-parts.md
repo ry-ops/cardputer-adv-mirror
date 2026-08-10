@@ -1,6 +1,6 @@
 # ADR 0022 — The keyboard is two parts: printed case legend + rubber dome
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** user: "we're not using a standard keyboard layout here. this is one
 of a kind. the onscreen keyboard needs to match the adv keyboard layout."
 

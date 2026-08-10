@@ -1,6 +1,6 @@
 # ADR 0004 — Mirror + full remote control
 
-**Status:** Proposed (build after 0001)
+**Status:** Proposed (build after 0001) — goal achieved via a different path: 0002 + 0017 + 0037 shipped remote control on `ReadbackFrameSource`, not on 0001's `TeeFrameSource` as specified below. 0001 itself remains unbuilt.
 **Deciders:** firmware owner
 **Related:** 0001 (provides layers 2-5), 0002 (provides layers 3-5)
 
