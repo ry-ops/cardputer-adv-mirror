@@ -1,6 +1,6 @@
 # ADR 0025 — Test the page the device serves, not web/index.html
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** the ADV keyboard had been verified by three text-level tests, a
 matplotlib render, and source pattern-matching — but had **never been executed
 in a DOM.** Adding that test found nothing wrong with the keyboard and two

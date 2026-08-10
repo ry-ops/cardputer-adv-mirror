@@ -8,11 +8,11 @@ Architecture Decision Records for mirroring / remote-controlling an
 | [0001](0001-panel-tee-mirror.md) | Panel tee mirror (`Panel_Mirror` wraps `Panel_ST7789`) | Proposed |
 | [0002](0002-gram-readback-mirror.md) | GRAM readback mirror (non-invasive) | **Accepted — implemented** |
 | [0003](0003-browser-simulator.md) | Pure browser simulator (no device) | Proposed |
-| [0004](0004-full-remote-control.md) | Mirror + full remote control | Proposed |
+| [0004](0004-full-remote-control.md) | Mirror + full remote control | Proposed — goal achieved via 0002+0017+0037 instead |
 | [0005](0005-host-mcp-dev-server.md) | Host-side MCP server for the firmware development loop | Accepted |
 | [0006](0006-readback-byte-order.md) | The 25% self-test was a byte-order bug, not unreliable readback | Accepted |
 | [0007](0007-wifi-manager.md) | Multi-profile WiFi manager with explicit failure reporting | Accepted |
-| [0008](0008-sd-manager.md) | SD card manager: explicit formatting via the FATFS layer | Accepted |
+| [0008](0008-sd-manager.md) | SD card manager: explicit formatting via the FATFS layer | Superseded by 0036 |
 | [0009](0009-hotspot-rescan.md) | Hotspot rescan, and never show only the mDNS name | Accepted |
 | [0010](0010-on-device-menu.md) | On-device menu | Accepted |
 | [0011](0011-scan-from-softap.md) | Scanning from SoftAP is not a trustworthy scan | Accepted |
@@ -33,14 +33,14 @@ Architecture Decision Records for mirroring / remote-controlling an
 | [0026](0026-remove-keystroke-log.md) | Remove the keystroke log; fix two false claims in the note | Accepted |
 | [0027](0027-hamburger-menu.md) | Move occasional controls behind a hamburger; keep modal state visible | Accepted |
 | [0028](0028-device-mockup.md) | Device mockup with inset display, zoom pops it out | Accepted |
-| [0029](0029-topedge-buttons.md) | BtnG0 and BtnRst move onto the case top edge, unlabelled | Accepted |
-| [0030](0030-topface-and-front-detail.md) | Top-face photo corrects the button sides; front-face detail measured | Accepted |
+| [0029](0029-topedge-buttons.md) | BtnG0 and BtnRst move onto the case top edge, unlabelled | Accepted — position/width superseded by 0030 |
+| [0030](0030-topface-and-front-detail.md) | Top-face photo corrects the button sides; front-face detail measured | Accepted — supersedes 0029 position/width |
 | [0031](0031-paint-order.md) | Paint order buried three correctly-positioned details | Accepted |
 | [0032](0032-note-removal-menu-confirm.md) | Note text removed; menu and keyboard toggle confirmed shipping | Accepted |
 | [0033](0033-stamp-photo.md) | Stamp-S3A label is a photograph on its own route | Accepted |
-| [0034](0034-adv-label-css.md) | CARDPUTER ADV label stays CSS, measured against the photo | Accepted |
-| [0035](0035-adv-label-photo.md) | CARDPUTER ADV label becomes a photograph; CSS screws removed | Accepted |
-| [0036](0036-remove-sd.md) | Remove the SD card feature entirely | Accepted |
+| [0034](0034-adv-label-css.md) | CARDPUTER ADV label stays CSS, measured against the photo | Superseded by 0035 |
+| [0035](0035-adv-label-photo.md) | CARDPUTER ADV label becomes a photograph; CSS screws removed | Accepted — supersedes 0034 |
+| [0036](0036-remove-sd.md) | Remove the SD card feature entirely | Accepted — supersedes 0008 |
 | [0037](0037-control-over-wifi.md) | Why control appeared to need USB: modem sleep, and a counter that lied | **Accepted — implemented** |
 
 ## Hardware facts these ADRs rest on

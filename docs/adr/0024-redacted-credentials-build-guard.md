@@ -1,6 +1,6 @@
 # ADR 0024 — A redacted credentials file builds and flashes cleanly, then fails as SoftAP
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** user rotated the hotspot passphrase and replaced
 `include/wifi_credentials.h` with a redacted copy, then asked me to verify.
 

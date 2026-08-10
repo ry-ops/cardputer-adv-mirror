@@ -1,5 +1,7 @@
 # ADR 0032 — Note text removed; menu and keyboard toggle confirmed shipping
 
+**Status:** Accepted — implemented
+
 ## Context
 The user reported not having seen the hamburger menu, asked whether the S3A
 sticker work was ongoing, restated the requirement to switch between the

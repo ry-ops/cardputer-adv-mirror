@@ -1,6 +1,6 @@
 # ADR 0008 — SD card manager: explicit formatting via the FATFS layer
 
-**Status:** accepted
+**Status:** Superseded by 0036 — SD support removed from the tree entirely; this record stays for the FATFS reasoning, which is still correct, just no longer in use
 **Context:** checklist item "sd card formatter"
 
 ## Problem

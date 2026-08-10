@@ -1,5 +1,7 @@
 # ADR 0033 — Stamp-S3A label is a photograph on its own route
 
+**Status:** Accepted — implemented
+
 ## Context
 The sticker had been a CSS rainbow gradient with the text "STAMP S3A" — openly
 decorative. The real module label carries the pinout the user actually needs:

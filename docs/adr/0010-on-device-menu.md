@@ -1,6 +1,6 @@
 # ADR 0010 — On-device menu
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** third consecutive WiFi failure diagnosed only by flashing new firmware
 
 ## Problem

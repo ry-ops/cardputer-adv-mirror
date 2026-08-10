@@ -1,6 +1,6 @@
 # ADR 0011 — Scanning from SoftAP is not a trustworthy scan
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** RY-OPS visible at -24 dBm earlier; now absent from every scan
 
 ## The contradiction

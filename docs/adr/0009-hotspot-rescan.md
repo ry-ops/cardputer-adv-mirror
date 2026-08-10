@@ -1,6 +1,6 @@
 # ADR 0009 — Hotspot rescan, and never show only the mDNS name
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** device displayed `http://cardputer.local` but was unreachable
 
 ## Symptom

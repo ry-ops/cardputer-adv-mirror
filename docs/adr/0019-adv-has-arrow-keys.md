@@ -1,6 +1,6 @@
 # ADR 0019 — The ADV has dedicated arrow keys; I said it did not
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** user: "the adv does have arrow keys". They were right.
 
 ## The false claim
