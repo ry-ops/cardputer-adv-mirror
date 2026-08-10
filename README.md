@@ -1,8 +1,7 @@
 # Cardputer ADV — Browser Display Mirror
 
-Mirror an **M5Stack Cardputer ADV** display in a web browser.
-Implements **ADR 0002** (non-invasive GRAM readback); ADRs 0001/0003/0004 are
-written and ready to build on top.
+**View and control** an **M5Stack Cardputer ADV** from a web browser, over WiFi.
+Implements **ADR 0002** (non-invasive GRAM readback) with key injection on top.
 
 ```
 CardputerMirror.begin();    // setup()  — WiFi + HTTP + WebSocket
@@ -11,10 +10,11 @@ CardputerMirror.update();   // loop()   — budgeted scan, pushes changed tiles
 
 Browse to the IP printed on the device screen.
 
-> **Note:** the display and keyboard are mirrored over WiFi, but getting the
-> firmware onto the device still requires a USB connection — there's no OTA
-> update path, so `pio run -t upload` flashes over the ESP32-S3's native USB
-> CDC. The ADV runs on battery once flashed; USB isn't needed to keep it on.
+> **USB is for flashing only.** There's no OTA path, so `pio run -t upload`
+> writes the firmware over the ESP32-S3's native USB CDC. After that the cable
+> is not needed for anything — the ADV mirrors *and takes input* on battery.
+> If control seems to need the cable, you're on a build from before
+> [ADR 0037](docs/adr/0037-control-over-wifi.md); see **Control over WiFi** below.
 
 ![Cardputer ADV on-device screen](docs/images/screen.png)
 
@@ -26,6 +26,41 @@ them to the device. Prefer typing on your own keyboard? Click **Capture my
 keyboard** to toggle passthrough: real keypresses (including arrow keys) are
 mapped through the same matrix coordinates a physical press would use, so the
 firmware can't tell the difference.
+
+## Control over WiFi
+
+Keys and display frames share **one WebSocket** (`/ws`). USB is not in the
+control path at all — the only thing the firmware reads from serial is a debug
+banner. Two defects made control look like it required the cable, and both are
+fixed (ADR 0037):
+
+![Modem sleep delays inbound frames only](docs/images/modem-sleep.svg)
+
+**1. WiFi modem sleep was on because we never chose otherwise.** The Arduino
+core defaults to `WIFI_PS_MIN_MODEM` on the S3 and installs it at `STA_START`.
+It is asymmetric: *transmitting* wakes the radio, so tile frames always left
+immediately, while *receiving* parks between beacons — so every keypress waited
+for the next DTIM. A working display beside dead control is exactly what that
+produces. USB never caused it; it correlates with it, because a device on the
+bench is a metre from the AP and one on battery is across the room. Fixed with
+`WiFi.setSleep(false)`.
+
+**2. The page counted keys it never sent.** `send()` returns false when the
+socket is down, but every call site incremented the counter regardless — so
+presses dropped during the 1200 ms reconnect window were reported as delivered.
+`send()` now returns a boolean, all three call sites consume it, and a red
+**keys dropped** counter shows the difference.
+
+To tell a link problem from a menu problem, compare the two independent counts —
+the browser's **keys sent** against the device's own heartbeat:
+
+```
+[   42s] ip=10.88.135.147 clients=1 tiles=8134 keys=27/0 rssi=-58 heap=161284
+                                                     ^^^^ applied/dropped
+```
+
+Browser counts climbing while `keys=` stays flat means packets aren't arriving —
+read `rssi`. Below about **-75 dBm** the answer is an AP or an antenna, not code.
 
 ## Why this order (#2 -> #1 -> #4)
 
@@ -91,18 +126,25 @@ python3 tools/gen_web_assets.py    # web/index.html -> gzipped PROGMEM header
 pio run -t upload
 ```
 
-Defaults to a SoftAP **`CardputerADV`** / `cardputer`. Set `WIFI_SSID`/`WIFI_PASS`
-in `src/main.cpp` to join an existing network.
+Copy `include/wifi_credentials.example.h` to `include/wifi_credentials.h` and
+fill in `WIFI_PROFILES` to join your network — that file is gitignored. With no
+network reachable the device falls back to a SoftAP, **`CardputerADV`**, and
+prints the address on its own screen either way.
 
 ## Layout
 
 ```
-docs/adr/            ADR 0001-0004
+docs/adr/            ADR 0001-0037 — every decision, including the wrong ones
 lib/CardputerMirror/ Mirror, IFrameSource, ReadbackFrameSource, RLE codec
-web/index.html       Browser client (canvas + 4x14 ADV keyboard)
-tools/               Asset generator + native codec fuzz test
+web/index.html       Browser client (canvas + 4x14 ADV keyboard) — a template
+tools/               Asset generator, MCP server, test suite, codec fuzzer
 src/main.cpp         Example integration
+src/menu.cpp         On-device menu (Network / System / Mirror / Key Test)
+include/             wifi_credentials.h (gitignored) + its example
 ```
+
+Dropping the mirror into other firmware is `serverHandle()` plus the two marked
+lines in `src/main.cpp`; the library owns no policy of its own.
 
 ## Known limits (ADR 0002)
 
@@ -110,7 +152,9 @@ src/main.cpp         Example integration
 - **Tearing** — a tile can be read mid-draw.
 - **Missed changes** — content drawn and reverted between two scans of the same
   tile is never seen (CRC sampling).
-- **Read-only** — the on-screen keyboard is a layout reference; injection is ADR 0004.
+- **Input is injected, not electrical** — keys are posted into the firmware's own
+  queue at the matrix coordinates a physical press would use. Code that reads the
+  TCA8418 directly rather than through `M5Cardputer.Keyboard` won't see them.
 - **Colors** — if wrong, toggle `Swap R/B` / `Invert`; ST7789 revisions differ.
 - A self-test well under 100% means readback is unreliable on your unit; ADR 0001
   is then the path forward.
