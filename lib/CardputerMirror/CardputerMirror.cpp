@@ -10,6 +10,7 @@
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <esp_heap_caps.h>
+#include <freertos/semphr.h>
 
 namespace cmirror {
 
@@ -91,12 +92,8 @@ static void* allocPreferPsram(size_t n)
     return p;
 }
 
-bool Mirror::begin() { return begin(Config{}); }
-
-bool Mirror::begin(const Config& cfg)
+bool Mirror::_allocBuffers()
 {
-    _cfg = cfg;
-
     _shadow = (uint16_t*)allocPreferPsram(kShadowBytes);
     _tile   = (uint16_t*)allocPreferPsram(kTilePx * 2);
     if (!_shadow || !_tile) {
@@ -105,6 +102,15 @@ bool Mirror::begin(const Config& cfg)
         return false;
     }
     memset(_shadow, 0, kShadowBytes);
+    return true;
+}
+
+bool Mirror::begin() { return begin(Config{}); }
+
+bool Mirror::begin(const Config& cfg)
+{
+    _cfg = cfg;
+    if (!_allocBuffers()) return false;
 
     static ReadbackFrameSource src;
     _src = &src;
@@ -113,6 +119,35 @@ bool Mirror::begin(const Config& cfg)
     _selfTest = src.selfTest();
     log_i("CardputerMirror: readback self-test %d%%", _selfTest);
 
+    return _startServer();
+}
+
+bool Mirror::begin(IHostAdapter& adapter) { return begin(Config{}, adapter); }
+
+bool Mirror::begin(const Config& cfg, IHostAdapter& adapter)
+{
+    _cfg = cfg;
+    if (!_allocBuffers()) return false;
+
+    // Adapter owns and outlives its frame source / input sink -- Mirror only
+    // borrows references, same lifetime contract as the static
+    // ReadbackFrameSource in begin(cfg) above.
+    adapter.begin();
+    _src     = &adapter.frameSource();
+    _sink    = &adapter.inputSink();
+    _busLock = adapter.busLock();
+    _sink->begin();
+
+    if (!_src->begin()) return false;
+
+    _selfTest = _src->selfTest();
+    log_i("CardputerMirror: frame source self-test %d%% (-1 = adapter has none)", _selfTest);
+
+    return _startServer();
+}
+
+bool Mirror::_startServer()
+{
     if (_cfg.manageWifi) {
         if (_cfg.ssid) {
             WiFi.mode(WIFI_STA);
@@ -162,16 +197,22 @@ bool Mirror::begin(const Config& cfg)
             // drawing, which is why keyinject::post() is the only call made.
             // Top-edge button: {"t":"btn","b":"g0","ms":80}
             // Routed to its own sink, not through the key path -- see onBtn().
-            if (msg.indexOf("\"btn\"") >= 0 && _onBtn) {
+            // _sink (adapter-driven begin(), ADR 0038) and _onKey/_onBtn
+            // (legacy callback begin()) are mutually exclusive per instance;
+            // _sink takes priority when both happen to be set.
+            if (msg.indexOf("\"btn\"") >= 0 && (_sink || _onBtn)) {
                 const int mi = msg.indexOf("\"ms\":");
                 int ms = (mi >= 0) ? msg.substring(mi + 5).toInt() : 80;
                 if (ms < 10)   ms = 10;
                 if (ms > 2000) ms = 2000;
-                if (msg.indexOf("\"g0\"") >= 0) _onBtn(0, (uint16_t)ms);
+                if (msg.indexOf("\"g0\"") >= 0) {
+                    if (_sink) _sink->injectBtn(0, (uint16_t)ms);
+                    else       _onBtn(0, (uint16_t)ms);
+                }
             }
 
             int k = msg.indexOf("\"key\"");
-            if (k >= 0 && _onKey) {
+            if (k >= 0 && (_sink || _onKey)) {
                 const int ri = msg.indexOf("\"r\":");
                 const int ci = msg.indexOf("\"c\":");
                 if (ri >= 0 && ci >= 0) {
@@ -179,8 +220,10 @@ bool Mirror::begin(const Config& cfg)
                     const int c = msg.substring(ci + 4).toInt();
                     const bool sh = msg.indexOf("\"shift\":true") >= 0;
                     const bool fn = msg.indexOf("\"fn\":true")    >= 0;
-                    if (r >= 0 && r < 4 && c >= 0 && c < 14)
-                        _onKey((uint8_t)r, (uint8_t)c, sh, fn);
+                    if (r >= 0 && r < 4 && c >= 0 && c < 14) {
+                        if (_sink) _sink->inject(RemoteKey{(uint8_t)r, (uint8_t)c, sh, fn});
+                        else       _onKey((uint8_t)r, (uint8_t)c, sh, fn);
+                    }
                 }
             }
         }
@@ -252,7 +295,15 @@ bool Mirror::scanOneTile()
     const int idx = _cursor;
     _cursor = (_cursor + 1) % kNumTiles;
 
-    if (!_src->fetchTile(idx, _tile)) return true;
+    // ADR 0038 / launcher-adv-mirror ADR 0004: most adapters need no lock
+    // here because update() already inherits the caller's own serialization
+    // by running on loop() (ADR 0002). _busLock exists for the adapters that
+    // don't get that for free -- taken/given only when non-null, so it costs
+    // nothing when it isn't needed.
+    if (_busLock) xSemaphoreTake((SemaphoreHandle_t)_busLock, portMAX_DELAY);
+    const bool ok = _src->fetchTile(idx, _tile);
+    if (_busLock) xSemaphoreGive((SemaphoreHandle_t)_busLock);
+    if (!ok) return true;
 
     if (_cfg.swapRB || _cfg.invert) {
         for (size_t i = 0; i < kTilePx; ++i) {

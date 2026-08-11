@@ -10,6 +10,16 @@ Architecture Decision Records for mirroring / remote-controlling an
 | [0003](0003-browser-simulator.md) | Pure browser simulator (no device) | Proposed |
 | [0004](0004-full-remote-control.md) | Mirror + full remote control | Proposed |
 
+This table covers only the four mirroring/control strategy options; ADRs
+0005-0037 (wifi manager, on-device menu, keyboard layout, etc.) live in this
+directory but aren't part of that comparison.
+
+## Library API
+
+| ADR | Title | Status |
+|-----|-------|--------|
+| [0038](0038-adapter-driven-begin.md) | Adapter-driven `begin()`: `IInputSink` / `IHostAdapter` — lets a second host firmware (see [launcher-adv-mirror](https://github.com/ry-ops/launcher-adv-mirror)) supply its own frame source and input path without editing this library | Proposed |
+
 ## Hardware facts these ADRs rest on
 
 All verified by reading M5GFX / M5Unified / M5Cardputer sources, not datasheets.

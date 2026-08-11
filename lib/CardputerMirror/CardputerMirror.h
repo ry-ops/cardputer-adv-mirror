@@ -18,6 +18,7 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include <stddef.h>
+#include "IInputSink.h"
 
 namespace cmirror {
 
@@ -50,6 +51,10 @@ public:
     virtual bool fetchTile(int tileIndex, uint16_t* dst) = 0;
     // True if this source knows which tiles changed without reading them.
     virtual bool hasExactDirty() const { return false; }
+    // Percent match (0..100) from a boot self-test, or -1 if this source has
+    // none. ReadbackFrameSource overrides this with ADR 0002's pattern-based
+    // test; a tee source has nothing analogous to test and keeps the default.
+    virtual int  selfTest() { return -1; }
 };
 
 // ADR 0002 frame source: M5.Display.readRect() over 3-wire SIO.
@@ -60,7 +65,26 @@ public:
     // Draw a known pattern, read it back, return percent match (0..100).
     // Run before trusting any frame — 3-wire GRAM readback is the one risk
     // in ADR 0002 that source-reading cannot settle.
-    int  selfTest();
+    int  selfTest() override;
+};
+
+// Opaque SPI-bus mutex (a FreeRTOS SemaphoreHandle_t, cast to PortMutex*).
+// Adapters sharing the panel bus with the host's own writes return the
+// host's real mutex; adapters with no such contention return nullptr. The
+// core takes/gives it only around IFrameSource calls, and only if non-null.
+// See ADR 0038, and launcher-adv-mirror ADR 0004 for a worked example of
+// deciding which applies.
+using PortMutex = void;
+
+// Core-owned interface — ADR 0038. Firmwares implement it; the core only
+// consumes it. The library itself never contains a concrete IHostAdapter.
+class IHostAdapter {
+public:
+    virtual ~IHostAdapter() = default;
+    virtual void          begin()       = 0;   // install hooks, start sources
+    virtual IFrameSource& frameSource() = 0;
+    virtual IInputSink&   inputSink()   = 0;
+    virtual PortMutex*    busLock()     = 0;
 };
 
 struct Config {
@@ -85,6 +109,12 @@ class Mirror {
 public:
     bool begin();
     bool begin(const Config& cfg);
+    // Adapter-driven begin() — ADR 0038. Frame source, input sink, and SPI
+    // bus lock all come from the adapter instead of being hardcoded here.
+    // begin()/begin(cfg) above are unchanged and keep building a
+    // ReadbackFrameSource internally; these overloads are purely additive.
+    bool begin(IHostAdapter& adapter);
+    bool begin(const Config& cfg, IHostAdapter& adapter);
     // Call from loop(). Reads at most cfg.budgetUs of tiles, pushes changes.
     void update();
 
@@ -135,7 +165,14 @@ private:
     bool       _ready = false;
     KeyFn      _onKey = nullptr;
     BtnFn      _onBtn = nullptr;
+    // Set only by the adapter-driven begin(). When _sink is non-null it takes
+    // priority over _onKey/_onBtn at the WebSocket dispatch site -- the two
+    // input paths are mutually exclusive per Mirror instance, never merged.
+    IInputSink* _sink    = nullptr;
+    PortMutex*  _busLock = nullptr; // taken/given around IFrameSource calls, if non-null
 
+    bool _allocBuffers();            // shadow + tile scratch, shared by both begin() paths
+    bool _startServer();             // WiFi/HTTP/WS bring-up, shared by both begin() paths
     bool scanOneTile();             // returns true if the tile changed
     void publishTile(int idx);
 };
