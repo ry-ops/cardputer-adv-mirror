@@ -125,6 +125,13 @@ public:
     String ipAddress() const;
     int    clientCount() const;
     int    selfTestScore() const { return _selfTest; }
+    // TEMPORARY diagnostic: last step begin(cfg, adapter) reached, updated
+    // synchronously at each stage. One-shot boot-time prints (log_e/log_i,
+    // even Serial.printf) are a losing race against hosts whose USB CDC
+    // re-enumerates on reset -- this is readable any time after begin()
+    // returns, from wherever a periodic heartbeat already lives. Remove once
+    // the real begin(adapter) failure is found and fixed.
+    const char* debugBeginStep() const { return _debugBeginStep; }
     uint32_t framesSent() const  { return _framesSent; }
 
     // The running server, so host firmware can add its own routes without this
@@ -170,6 +177,7 @@ private:
     // input paths are mutually exclusive per Mirror instance, never merged.
     IInputSink* _sink    = nullptr;
     PortMutex*  _busLock = nullptr; // taken/given around IFrameSource calls, if non-null
+    const char* _debugBeginStep = "not started"; // TEMPORARY, see debugBeginStep()
 
     bool _allocBuffers();            // shadow + tile scratch, shared by both begin() paths
     bool _startServer();             // WiFi/HTTP/WS bring-up, shared by both begin() paths
