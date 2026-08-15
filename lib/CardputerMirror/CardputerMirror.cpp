@@ -32,14 +32,11 @@ static void* allocPreferPsram(size_t n)
 
 bool Mirror::_allocBuffers()
 {
-    _shadow = (uint16_t*)allocPreferPsram(kShadowBytes);
-    _tile   = (uint16_t*)allocPreferPsram(kTilePx * 2);
-    if (!_shadow || !_tile) {
-        log_e("CardputerMirror: alloc failed (need %u B)",
-              (unsigned)(kShadowBytes + kTilePx * 2));
+    _tile = (uint16_t*)allocPreferPsram(kTilePx * 2);
+    if (!_tile) {
+        log_e("CardputerMirror: alloc failed (need %u B)", (unsigned)(kTilePx * 2));
         return false;
     }
-    memset(_shadow, 0, kShadowBytes);
     return true;
 }
 
@@ -279,13 +276,6 @@ bool Mirror::scanOneTile()
 
     _crc[idx]   = c;
     _force[idx] = false;
-
-    // Keep the shadow authoritative for future full-frame pushes.
-    const int tx = (idx % kTileCols) * kTileW;
-    const int ty = (idx / kTileCols) * kTileH;
-    for (int y = 0; y < kTileH; ++y)
-        memcpy(&_shadow[(ty + y) * kScreenW + tx],
-               &_tile[y * kTileW], kTileW * 2);
 
     publishTile(idx);
     return true;

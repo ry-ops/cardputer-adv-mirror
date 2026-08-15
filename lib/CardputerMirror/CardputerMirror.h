@@ -31,7 +31,6 @@ static constexpr int kTileW    = kScreenW / kTileCols;  // 60
 static constexpr int kTileH    = kScreenH / kTileRows;  // 45
 static constexpr int kNumTiles = kTileCols * kTileRows; // 12
 static constexpr size_t kTilePx = (size_t)kTileW * kTileH;          // 2700
-static constexpr size_t kShadowBytes = (size_t)kScreenW * kScreenH * 2; // 64800
 
 /*
  * Frame acquisition interface.
@@ -166,7 +165,6 @@ private:
     // entirely in that case -- a frame source failure means "no display
     // mirror", not "no server at all". See begin()'s own comment.
     bool       _srcOk = false;
-    uint16_t*  _shadow = nullptr;   // RGB565, 64,800 B
     uint16_t*  _tile   = nullptr;   // RGB565 scratch, 5,400 B
     uint32_t   _crc[kNumTiles] = {0};
     bool       _force[kNumTiles] = {false};
