@@ -1,5 +1,7 @@
 # ADR 0030 — Top-face photo corrects the button sides; front-face detail measured
 
+**Status:** Accepted — implemented (supersedes 0029's position/width decisions)
+
 ## Context
 ADR 0029 placed BtnG0/BtnRst from the documented top-edge order (G0, slide,
 microSD, BtnRst, IR) because the only reference photo was front-on. A second

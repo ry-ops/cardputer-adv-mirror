@@ -1,5 +1,7 @@
 # ADR 0028 — Device mockup with inset display, zoom pops it out
 
+**Status:** Accepted — implemented
+
 ## Context
 The page showed a bare canvas above a detached keyboard. The request was a
 single visual: the ADV case with the display inset and the working keyboard in

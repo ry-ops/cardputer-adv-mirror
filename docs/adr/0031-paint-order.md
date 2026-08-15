@@ -1,5 +1,7 @@
 # ADR 0031 — Paint order buried three correctly-positioned details
 
+**Status:** Accepted — implemented
+
 ## Context
 A screenshot of the built page in a real browser showed the microphone missing
 and one screw half-covered by the white label panel. Every one of those

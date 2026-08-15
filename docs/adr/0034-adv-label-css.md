@@ -1,5 +1,7 @@
 # ADR 0034 — CARDPUTER ADV label stays CSS, measured against the photo
 
+**Status:** Superseded by 0035 — the user rejected the CSS route after this ADR shipped it
+
 ## Context
 The user asked whether the ADV label on the left of the case could be improved,
 having just accepted the photograph route for the Stamp-S3A module (ADR 0033).

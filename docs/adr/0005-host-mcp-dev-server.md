@@ -1,6 +1,6 @@
 # ADR 0005 — Host-side MCP server for the firmware development loop
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Date:** 2026-08-08
 **Context:** ADR 0002 implementation; five consecutive debugging failures
 

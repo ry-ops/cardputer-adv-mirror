@@ -1,5 +1,7 @@
 # ADR 0037 — Why control appeared to need USB: modem sleep, and a counter that lied
 
+**Status:** Accepted — implemented
+
 ## Context
 Control from the dashboard worked with the ADV plugged into USB and appeared
 dead on battery. The display mirror kept working in both cases, which is what

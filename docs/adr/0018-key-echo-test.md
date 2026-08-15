@@ -1,6 +1,6 @@
 # ADR 0018 — A key that does nothing is not a key that failed
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** "the enter key works, we have no way to test the other keys"
 
 ## The report was right, and the cause was not the keyboard

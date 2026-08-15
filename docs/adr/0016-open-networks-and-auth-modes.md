@@ -1,6 +1,6 @@
 # ADR 0016 — Open networks, auth modes, and the WPA2 association floor
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** switching the target network to MDC(IoT), which has no passphrase
 
 ## Three real defects, found before the first flash

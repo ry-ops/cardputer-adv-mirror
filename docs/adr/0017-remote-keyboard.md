@@ -1,6 +1,6 @@
 # ADR 0017 — Remote keyboard: generate the layout, send coordinates
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** browser keyboard should show the real ADV layout and actually drive the device
 
 ## Two decisions, both about avoiding a second source of truth

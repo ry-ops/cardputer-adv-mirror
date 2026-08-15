@@ -1,6 +1,6 @@
 # ADR 0015 — Show the broadcast SSID, not the configured one
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** user: "it's still using the lowercase ry-ops not the uppercase RY-OPS"
 
 ## The observation was correct; the inference it invited was not

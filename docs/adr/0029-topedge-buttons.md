@@ -1,5 +1,7 @@
 # ADR 0029 — BtnG0 and BtnRst move onto the case top edge, unlabelled
 
+**Status:** Accepted — implemented (position/width superseded by 0030)
+
 ## Context
 The two top-face controls lived in a `#topedge` strip below the mockup, with a
 "TOP EDGE" label, a pin-list caption (OFF/ON slide, microSD pins, IR:G44) and

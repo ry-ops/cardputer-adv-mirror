@@ -1,6 +1,6 @@
 # ADR 0027 — Move occasional controls behind a hamburger; keep modal state visible
 
-**Status:** accepted
+**Status:** Accepted — implemented
 **Context:** user asked to move `Full refresh`, `Swap R/B`, `Invert`, `Save PNG`,
 the five stream stats, `Capture my keyboard`, `Test all 56 keys`, and the
 `mods`/`sent`/`coverage` readouts into a hamburger menu.
