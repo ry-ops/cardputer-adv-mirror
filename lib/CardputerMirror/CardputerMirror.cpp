@@ -302,8 +302,20 @@ void Mirror::publishTile(int idx)
     size_t n = encodeTile(_tile, kTilePx, out + 4, sizeof(out) - 4);
     if (n == 0) return;
     if (s_ws->availableForWriteAll()) {
-        s_ws->binaryAll((const char*)out, n + 4);
-        ++_framesSent;
+        // binaryAll() copies `out` into a heap-allocated std::vector
+        // (ESPAsyncWebServer's makeSharedBuffer()) before it can queue the
+        // send. That allocation is a plain `new`, and this firmware is built
+        // with -fno-exceptions, so an allocation failure there does not throw
+        // std::bad_alloc -- it calls std::terminate()/abort() and reboots the
+        // whole device over one dropped tile. Ask the allocator whether the
+        // copy would fit in the largest contiguous free block first, and skip
+        // this tile (same graceful-degradation stance as ADR 0041) rather
+        // than risk that. ADV units are frequently PSRAM-less, so internal
+        // SRAM headroom here can be genuinely tight, not just theoretical.
+        if (heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) > (n + 4) + 512) {
+            s_ws->binaryAll((const char*)out, n + 4);
+            ++_framesSent;
+        }
     }
 }
 
