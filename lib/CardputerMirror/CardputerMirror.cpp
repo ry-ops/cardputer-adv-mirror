@@ -64,24 +64,41 @@ bool Mirror::begin(IHostAdapter& adapter) { return begin(Config{}, adapter); }
 
 bool Mirror::begin(const Config& cfg, IHostAdapter& adapter)
 {
+    // TEMPORARY step-by-step tracing: log_e/log_i are silent under
+    // CORE_DEBUG_LEVEL=0 (Launcher's build), and begin(adapter) was failing
+    // there with no visible cause at all. Serial.printf isn't gated by that
+    // macro. Remove once the real failure point is found and fixed.
+    Serial.printf("Mirror::begin(adapter): start\n");
     _cfg = cfg;
-    if (!_allocBuffers()) return false;
+    if (!_allocBuffers()) {
+        Serial.printf("Mirror::begin(adapter): _allocBuffers() FAILED\n");
+        return false;
+    }
+    Serial.printf("Mirror::begin(adapter): _allocBuffers() ok\n");
 
     // Adapter owns and outlives its frame source / input sink -- Mirror only
     // borrows references, same lifetime contract as the static
     // ReadbackFrameSource in begin(cfg) above.
     adapter.begin();
+    Serial.printf("Mirror::begin(adapter): adapter.begin() returned\n");
     _src     = &adapter.frameSource();
     _sink    = &adapter.inputSink();
     _busLock = adapter.busLock();
     _sink->begin();
+    Serial.printf("Mirror::begin(adapter): sink/frameSource/busLock wired, sink->begin() returned\n");
 
-    if (!_src->begin()) return false;
+    if (!_src->begin()) {
+        Serial.printf("Mirror::begin(adapter): _src->begin() FAILED\n");
+        return false;
+    }
+    Serial.printf("Mirror::begin(adapter): _src->begin() ok\n");
 
     _selfTest = _src->selfTest();
     log_i("CardputerMirror: frame source self-test %d%% (-1 = adapter has none)", _selfTest);
 
-    return _startServer();
+    bool serverOk = _startServer();
+    Serial.printf("Mirror::begin(adapter): _startServer() -> %s\n", serverOk ? "true" : "FALSE");
+    return serverOk;
 }
 
 bool Mirror::_startServer()
