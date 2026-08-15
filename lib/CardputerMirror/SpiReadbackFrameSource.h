@@ -46,6 +46,13 @@ public:
     bool begin() override;
     bool fetchTile(int tileIndex, uint16_t* dst) override;
 
+    // TEMPORARY diagnostic: the esp_err_t from spi_bus_add_device() if
+    // begin() failed, ESP_OK otherwise. Readable any time after begin()
+    // returns -- same reasoning as Mirror::debugBeginStep(), a one-shot
+    // boot-time print is a losing race on hosts whose USB CDC re-enumerates
+    // on reset. Remove once the real failure is found and fixed.
+    esp_err_t debugSpiAddDeviceErr() const { return _debugSpiErr; }
+
     // IFrameSource::selfTest() stays -1 (this source has none, honestly) --
     // this class has no draw path of its own, so it cannot run ADR 0002's
     // "draw a pattern, read it back" test unassisted. An adapter that CAN
@@ -60,6 +67,7 @@ public:
 private:
     SpiPanelConfig       _cfg;
     spi_device_handle_t  _dev  = nullptr;
+    esp_err_t            _debugSpiErr = ESP_OK; // TEMPORARY, see debugSpiAddDeviceErr()
     uint8_t*             _raw  = nullptr;   // scratch: dummy + kTilePx * 3 B, rgb888
 
     void _dcCommand() const;   // DC low -- next byte(s) are a command

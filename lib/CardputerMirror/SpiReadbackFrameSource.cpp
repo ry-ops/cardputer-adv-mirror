@@ -44,20 +44,10 @@ bool SpiReadbackFrameSource::begin()
     // Fails here if that hasn't happened yet, which is a caller-ordering bug
     // worth surfacing loudly rather than silently reading garbage.
     esp_err_t err = spi_bus_add_device(_cfg.host, &devcfg, &_dev);
+    _debugSpiErr = err;
     if (err != ESP_OK) {
         log_e("SpiReadbackFrameSource: spi_bus_add_device failed -- "
               "was the host's own display driver initialized first?");
-        // log_e/log_i are compiled out entirely when a host builds with
-        // CORE_DEBUG_LEVEL=0 (Launcher does) -- found the hard way debugging
-        // launcher-adv-mirror, where this failure was completely silent.
-        // Serial.printf is not gated by that macro, so use it too for a
-        // failure this important: a wrong host/pin config here means the
-        // whole mirror silently never starts.
-        Serial.printf(
-            "SpiReadbackFrameSource: spi_bus_add_device(host=%d) failed: %s (0x%x) -- "
-            "check SpiPanelConfig.host against the display driver actually in use\n",
-            (int)_cfg.host, esp_err_to_name(err), (unsigned)err
-        );
         _dev = nullptr;
         return false;
     }
