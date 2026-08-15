@@ -52,10 +52,15 @@ bool Mirror::begin(const Config& cfg)
 
     static ReadbackFrameSource src;
     _src = &src;
-    if (!_src->begin()) return false;
-
-    _selfTest = src.selfTest();
-    log_i("CardputerMirror: readback self-test %d%%", _selfTest);
+    // A frame source failing to start is NOT fatal to the server -- the
+    // WebSocket control channel and remote key/button injection don't
+    // depend on it, only tile scanning does (see update()/scanOneTile(),
+    // which already no-op safely when _srcOk is false). Splitting these
+    // means "the display mirror can't read GRAM" and "remote control
+    // doesn't work" are no longer the same failure.
+    _srcOk = _src->begin();
+    _selfTest = _srcOk ? src.selfTest() : -1;
+    log_i("CardputerMirror: readback begin=%d self-test %d%%", _srcOk, _selfTest);
 
     return _startServer();
 }
@@ -83,14 +88,15 @@ bool Mirror::begin(const Config& cfg, IHostAdapter& adapter)
     _sink->begin();
     _debugBeginStep = "sink wired, sink->begin() returned";
 
-    if (!_src->begin()) {
-        _debugBeginStep = "_src->begin() FAILED";
-        return false;
-    }
-    _debugBeginStep = "_src->begin() ok";
+    // Same reasoning as begin(cfg) above: a frame source failure only means
+    // "no display mirror" -- the server, WebSocket, and remote key/button
+    // injection through _sink don't touch _src at all, so they still start.
+    _srcOk = _src->begin();
+    _debugBeginStep = _srcOk ? "_src->begin() ok" : "_src->begin() FAILED (non-fatal)";
 
-    _selfTest = _src->selfTest();
-    log_i("CardputerMirror: frame source self-test %d%% (-1 = adapter has none)", _selfTest);
+    _selfTest = _srcOk ? _src->selfTest() : -1;
+    log_i("CardputerMirror: frame source begin=%d self-test %d%% (-1 = adapter has none, or begin failed)",
+          _srcOk, _selfTest);
 
     bool serverOk = _startServer();
     _debugBeginStep = serverOk ? "_startServer() ok" : "_startServer() FAILED";
@@ -230,6 +236,8 @@ void Mirror::update()
     if (!_ready) return;
     s_ws->cleanupClients();
     if (s_ws->count() == 0) return;   // nothing to do; costs the app nothing
+    if (!_srcOk) return;              // no working frame source -- remote control (via the
+                                       // WS handler in _startServer()) still works either way
 
     // Budgeted incremental scan. Runs on the caller's task (loop()), which is
     // what keeps it safe: LGFX is not thread-safe, and borrowing the

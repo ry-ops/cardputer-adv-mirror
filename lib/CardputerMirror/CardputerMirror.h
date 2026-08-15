@@ -162,6 +162,10 @@ public:
 private:
     Config     _cfg;
     IFrameSource* _src = nullptr;
+    // False if _src->begin() failed. update()/scanOneTile() skip fetching
+    // entirely in that case -- a frame source failure means "no display
+    // mirror", not "no server at all". See begin()'s own comment.
+    bool       _srcOk = false;
     uint16_t*  _shadow = nullptr;   // RGB565, 64,800 B
     uint16_t*  _tile   = nullptr;   // RGB565 scratch, 5,400 B
     uint32_t   _crc[kNumTiles] = {0};
