@@ -169,7 +169,7 @@ bool Mirror::_startServer()
 
     s_server->addHandler(s_ws);
     s_server->on("/", HTTP_GET, [](AsyncWebServerRequest* req) {
-        auto* r = req->beginResponse_P(200, "text/html",
+        auto* r = req->beginResponse(200, "text/html",
                                        kIndexHtmlGz, kIndexHtmlGzLen);
         r->addHeader("Content-Encoding", "gzip");
         req->send(r);
@@ -182,7 +182,7 @@ bool Mirror::_startServer()
     // here, the format is already compressed and double-encoding it would only
     // cost CPU on a device whose whole budget is measured in ms per tile.
     s_server->on("/stamp.webp", HTTP_GET, [](AsyncWebServerRequest* req) {
-        auto* r = req->beginResponse_P(200, "image/webp",
+        auto* r = req->beginResponse(200, "image/webp",
                                        kStampWebp, kStampWebpLen);
         r->addHeader("Cache-Control", "public, max-age=31536000, immutable");
         req->send(r);
@@ -190,7 +190,7 @@ bool Mirror::_startServer()
     // The CARDPUTER ADV panel, same reasoning (ADR 0035). It supersedes a CSS
     // reconstruction that was measured correctly and still read as a drawing.
     s_server->on("/advlabel.webp", HTTP_GET, [](AsyncWebServerRequest* req) {
-        auto* r = req->beginResponse_P(200, "image/webp",
+        auto* r = req->beginResponse(200, "image/webp",
                                        kAdvLabelWebp, kAdvLabelWebpLen);
         r->addHeader("Cache-Control", "public, max-age=31536000, immutable");
         req->send(r);

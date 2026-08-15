@@ -52,6 +52,8 @@ directory but aren't part of that comparison.
 | ADR | Title | Status |
 |-----|-------|--------|
 | [0038](0038-adapter-driven-begin.md) | Adapter-driven `begin()`: `IInputSink` / `IHostAdapter` — lets a second host firmware (see [launcher-adv-mirror](https://github.com/ry-ops/launcher-adv-mirror)) supply its own frame source and input path without editing this library | Proposed |
+| [0039](0039-driver-independent-readback.md) | `SpiReadbackFrameSource` — GRAM readback for hosts without M5Unified/M5GFX | Accepted — implemented, unverified on hardware |
+| [0040](0040-async-webserver-fork.md) | `esp32async/ESPAsyncWebServer` instead of the esphome fork — the esphome fork can't build against an arduino-esp32 3.x core | **Accepted — implemented** |
 
 ## Hardware facts these ADRs rest on
 
