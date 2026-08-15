@@ -1,6 +1,10 @@
 # ADR 0039 — A driver-independent GRAM readback frame source
 
-**Status:** Proposed
+**Status:** Accepted — implemented (`SpiReadbackFrameSource`), **unverified on
+real hardware**. Builds clean against ESP-IDF's `spi_master` driver; the
+actual read correctness (dummy-bit count, RGB888->565 truncation, CS timing)
+needs `checkPattern()` run on a real device before it's trusted for anything
+beyond compiling.
 **Deciders:** firmware owner
 **Related:** ADR 0002 (proved 3-wire SIO GRAM readback works on this panel —
 this ADR does not re-litigate that), ADR 0038 (`IHostAdapter`, the seam this
@@ -61,7 +65,13 @@ collision to design around here, because nothing on this bus is doing that.
 
 Add a new `IFrameSource` implementation to this library —
 `SpiReadbackFrameSource` — that performs the same read sequence via the
-standard ESP-IDF `spi_master` driver instead of M5GFX:
+standard ESP-IDF `spi_master` driver instead of M5GFX. As implemented, one
+detail resolved during coding that's worth recording here rather than only
+in the diff: device-level `dummy_bits` stays 0 (a nonzero value would
+insert a dummy phase into *every* transaction through the device handle,
+including the plain CASET/RASET/RAMRD command writes, corrupting their
+framing); the 16-bit dummy phase is applied per-transaction only on the
+final read, via `spi_transaction_ext_t` + `SPI_TRANS_VARIABLE_DUMMY`.
 
 - Takes pin config (MOSI/SCLK/DC/CS/RST), read clock speed, and dummy-bit
   count through its constructor/a `Config` struct — no dependency on a global
