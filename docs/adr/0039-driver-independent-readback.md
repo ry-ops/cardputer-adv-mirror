@@ -1,10 +1,17 @@
 # ADR 0039 — A driver-independent GRAM readback frame source
 
-**Status:** Accepted — implemented (`SpiReadbackFrameSource`), **unverified on
-real hardware**. Builds clean against ESP-IDF's `spi_master` driver; the
-actual read correctness (dummy-bit count, RGB888->565 truncation, CS timing)
-needs `checkPattern()` run on a real device before it's trusted for anything
-beyond compiling.
+**Status:** Accepted — implemented (`SpiReadbackFrameSource`). `begin()` now
+succeeds on real hardware (launcher-adv-mirror, ESP-IDF 5.x via arduino-esp32
+3.x) after fixing a real bug found there: `spi_device_interface_config_t`
+gained a `clock_source` field in IDF 5.x that this code's zero-initialization
+left at the explicitly-reserved-invalid value 0 (`spi_bus_add_device`
+returned `ESP_ERR_INVALID_STATE`, "clock source unavailable"). Fixed with a
+version-guarded `devcfg.clock_source = SPI_CLK_SRC_DEFAULT` (the field
+doesn't exist pre-5.0, so this must stay guarded, not just always-set — see
+`SpiReadbackFrameSource.cpp`). **Actual read correctness** (dummy-bit count,
+RGB888->565 truncation, CS timing) is still unverified — `begin()` succeeding
+only proves the bus attaches, not that a read returns the right pixels.
+`checkPattern()` still needs to run on a real device before that's trusted.
 **Deciders:** firmware owner
 **Related:** ADR 0002 (proved 3-wire SIO GRAM readback works on this panel —
 this ADR does not re-litigate that), ADR 0038 (`IHostAdapter`, the seam this

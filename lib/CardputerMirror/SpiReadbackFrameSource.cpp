@@ -5,6 +5,7 @@
 #include "SpiReadbackFrameSource.h"
 #include <Arduino.h>
 #include <esp_heap_caps.h>
+#include <esp_idf_version.h>
 
 namespace cmirror {
 
@@ -26,6 +27,18 @@ bool SpiReadbackFrameSource::begin()
     digitalWrite(_cfg.pinDc, HIGH);
 
     spi_device_interface_config_t devcfg = {};
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+    // IDF 5.x+ (Launcher's arduino-esp32 3.x core; NOT this library's own
+    // env:cardputer-adv, still on an IDF 4.x-era core via espressif32@6.9.0)
+    // added a clock_source field to this struct. Zero-initializing the
+    // struct leaves it at 0 -- and per this enum's own doc comment ("enum
+    // starts from 1, to save 0 for special purpose"), 0 is deliberately NOT
+    // a valid clock source. Confirmed root cause of spi_bus_add_device
+    // returning ESP_ERR_INVALID_STATE ("selected clock source is
+    // unavailable") on IDF 5.x. The field doesn't exist at all pre-5.0, so
+    // this must stay version-guarded rather than just always-set.
+    devcfg.clock_source   = SPI_CLK_SRC_DEFAULT;
+#endif
     devcfg.mode           = _cfg.spiMode;
     devcfg.clock_speed_hz = (int)_cfg.readHz;
     devcfg.spics_io_num   = _cfg.pinCs;
