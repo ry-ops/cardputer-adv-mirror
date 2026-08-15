@@ -93,9 +93,19 @@ final read, via `spi_transaction_ext_t` + `SPI_TRANS_VARIABLE_DUMMY`.
   known pattern, read it back, report percent match. The sequence is proven;
   this specific implementation of it is not, until it's run on real hardware.
 
-`ReadbackFrameSource` (M5GFX-based) is untouched. This is a second,
-independent `IFrameSource`, not a rewrite — zero regression risk to the
-existing standalone example.
+`ReadbackFrameSource` (M5GFX-based) is untouched *behaviorally*. Its method
+bodies did move — out of `CardputerMirror.cpp` into their own
+`ReadbackFrameSource.cpp`, guarded by `#if __has_include(<M5Unified.h>)` —
+because `CardputerMirror.cpp` contains `Mirror` itself, and `Mirror` only
+ever touches a frame source through `IFrameSource`. Leaving `M5Unified.h`
+included there unconditionally would have broken compilation the moment
+`Mirror` got built into a host without it — which is exactly the Launcher
+case this whole ADR exists for. A host without M5Unified simply compiles
+`ReadbackFrameSource.cpp` to nothing and never constructs the class; nothing
+links a missing symbol, because nothing references one. This is a second,
+additive `IFrameSource`, not a rewrite of the first — zero regression risk
+to the existing standalone example, verified by an unchanged
+`env:cardputer-adv` build (RAM/Flash identical).
 
 **One real implementation risk worth naming now, not discovering later:**
 ESP-IDF's half-duplex + DMA combination has documented restrictions for
