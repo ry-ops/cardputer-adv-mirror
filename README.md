@@ -30,9 +30,9 @@ Implements **ADR 0002** (non-invasive GRAM readback) with key injection on top.
 - **Tunable, live.** Trade CPU headroom for frame rate on the fly, from
   Gentle (~14 fps) to Aggressive (~18 fps), against a hard ~20.6 fps ceiling
   set by the SPI bus itself.
-- **Actually verified, not just claimed.** A fuzzed codec (600+ trials, 0
+- **Actually verified, not just claimed.** A fuzzed codec (600 trials, 0
   failures) cross-checked against the shipped browser decoder, an automated
-  keyboard-coverage test suite, and 37 ADRs documenting every bug found along
+  keyboard-coverage test suite, and 38 ADRs documenting every bug found along
   the way — including the wrong turns.
 - **Free.** MIT licensed. No app, no account, no cloud — everything runs on
   the device and in your browser.
