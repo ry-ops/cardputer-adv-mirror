@@ -57,6 +57,8 @@ directory but aren't part of that comparison.
 | [0041](0041-frame-source-failure-is-not-fatal.md) | A frame source failure doesn't take down remote control — server/WS/key injection no longer depend on `_src->begin()` succeeding | **Accepted — implemented** |
 | [0044](0044-serial-rescan-outran-enumeration.md) | Two ways "is the device actually there?" gave a wrong answer during dev-loop USB checks — a shell-side timing artifact, and a genuinely wedged device that even `system_profiler` missed | Accepted — documented, not yet automated |
 | [0045](0045-mobile-first-and-native-keyboard-capture.md) | Mobile-first pass: real sizing tiers, zoom pops above the case on touch, and typing via the phone's own keyboard through a hidden input | Accepted — implemented, not yet verified on a physical iPhone |
+| [0046](0046-landscape-auto-zoom.md) | Landscape auto-zoom — an iPhone-only hamburger toggle that pops the display up and fills the screen at native 16:9 in landscape, for e.g. AirPlay-to-car-stereo wardriving | Accepted — implemented, not yet flashed |
+| [0047](0047-1262-hat-mockup.md) | 1262 HAT mockup drawn in CSS (GNSS+LoRa label centered on the device), with the top-edge buttons realigned to the ADV/S3A stickers and cut to 1/3 height | Accepted — implemented, not yet flashed |
 
 ## Hardware facts these ADRs rest on
 

@@ -36,7 +36,7 @@ Implements **ADR 0002** (non-invasive GRAM readback) with key injection on top.
   set by the SPI bus itself.
 - **Actually verified, not just claimed.** A fuzzed codec (600 trials, 0
   failures) cross-checked against the shipped browser decoder, an automated
-  keyboard-coverage test suite, and 45 ADRs documenting every bug found along
+  keyboard-coverage test suite, and 47 ADRs documenting every bug found along
   the way — including the wrong turns.
 - **Free.** MIT licensed. No app, no account, no cloud — everything runs on
   the device and in your browser.
@@ -188,7 +188,7 @@ prints the address on its own screen either way.
 ## Layout
 
 ```
-docs/adr/            ADR 0001-0045 — every decision, including the wrong ones
+docs/adr/            ADR 0001-0047 — every decision, including the wrong ones
 lib/CardputerMirror/ Mirror, IFrameSource, ReadbackFrameSource, RLE codec
 web/index.html       Browser client (canvas + 4x14 ADV keyboard) — a template
 tools/               Asset generator, MCP server, test suite, codec fuzzer

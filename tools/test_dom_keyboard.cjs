@@ -337,6 +337,24 @@ setTimeout(() => {
     ok(!/\.note\{/.test(styleText), 'orphaned .note CSS rule removed');
   }
 
+  // ---- Landscape auto-zoom row is iPhone-gated (ADR 0046) ------------------
+  // Regression test for a real bug: [hidden]'s implicit display:none lost to
+  // .row{display:flex} in a real browser (a specificity tie resolved by
+  // author-vs-UA-origin, not selector weight), so this row rendered on every
+  // device until #autozoomRow[hidden]{display:none} was added explicitly --
+  // caught visually in Chrome, not by this suite, since jsdom's CSS cascade
+  // support isn't reliable enough to assert the computed style here (this
+  // file asserts hidden-state via the .hidden IDL property everywhere else,
+  // e.g. menu.hidden/shell.hidden above, for the same reason).
+  {
+    const row = doc.getElementById('autozoomRow');
+    ok(row !== null, 'autozoom row exists');
+    ok(row.querySelector('#autozoom') !== null, 'autozoom row contains the toggle button');
+    ok(row.hidden === true, 'autozoom row starts hidden (attribute) on a non-iPhone UA');
+    ok(/#autozoomRow\[hidden\]\s*\{\s*display:\s*none\s*\}/.test(styleText),
+       'CSS explicitly overrides display:flex for the hidden state (source-level, since jsdom cascade can\'t be trusted here)');
+  }
+
   // ---- keys are only counted when they actually go out (ADR 0037)
   // send() returns false when the socket is down; noteSent() used to count
   // unconditionally, so the page reported success for presses it dropped.

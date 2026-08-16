@@ -84,12 +84,51 @@ button.on{border-color:var(--ok);color:var(--ok)}
  * top face does not appear in it. Order follows the documented top-edge layout
  * (BtnG0 ... slide switch ... microSD ... BtnRst ... IR), nothing finer. */
 #topedge{position:absolute;left:0;top:0;width:100%;height:0;z-index:3}
-#topedge .tbtn{position:absolute;bottom:0;
+/* 1262 HAT mockup -- SX1262 LoRa + GNSS combo (a wardriving loadout: LoRa for
+ * long-range links, GNSS for position). This is CSS ART, not a measured
+ * photo like the stamp/label (ADR 0033/0035) -- there is no reference photo
+ * of this hat actually mounted on a Cardputer ADV to measure against, and
+ * the user asked for CSS specifically. Colors/labels taken from the hat's
+ * own product photo. Lives in #topedge's shared "protrudes above the case"
+ * coordinate space (bottom:0 of a height:0 box), so it lines up with
+ * BtnG0/BtnRst rather than inventing a second positioning scheme. z-index
+ * BELOW .tbtn on purpose -- see that rule's z-index -- so the two buttons
+ * read as mounted ON TOP OF the hat, not behind it. See ADR 0047. */
+#devhat{position:absolute;left:2.2%;width:95.6%;bottom:0;
+  height:max(20px, calc(var(--cw)*0.030));z-index:2;
+  background:linear-gradient(#8a8d8a,#6f716f);
+  border-radius:calc(var(--cw)*0.014) calc(var(--cw)*0.014) 0 0;
+  border:1px solid #5c5e5c;border-bottom:0;
+  box-shadow:0 -2px 6px #0006, inset 0 1px 0 #ffffff33;
+  display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+/* #devhat is itself centered on #dev (its left/width above are symmetric:
+ * 2.2% + 97.8% both sides), so centering the label WITHIN #devhat via
+ * justify-content, with an exact 50/50 gnss/lora split, is what actually
+ * puts the blue/purple break at the device's own horizontal centerline --
+ * not a coincidence of matching numbers. Width well under 100% is
+ * deliberate: grey plastic shows on both sides of the label, matching the
+ * reference photo, rather than the label running edge-to-edge on the hat. */
+#devhatlabel{display:flex;width:58%;height:56%;border-radius:3px;overflow:hidden;
+  box-shadow:0 0 0 1px #00000030}
+#devhatlabel .gnss{flex:1 1 50%;background:#6f9ceb;color:#0b1220;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:calc(var(--cw)*0.011);letter-spacing:.02em}
+#devhatlabel .lora{flex:1 1 50%;background:#8a1f8c;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:calc(var(--cw)*0.011);letter-spacing:.02em}
+#topedge .tbtn{position:absolute;bottom:0;z-index:3;
   /* Proportionally these tabs are 0.020 of case width -- 5.8px at a 320px
    * viewport, far below a pressable target. Scaling faithfully would make the
    * only two hardware buttons on the page unusable on a phone, so height and
-   * width take a floor. Fidelity loses to hittability here. */
-  width:max(34px, calc(var(--cw)*0.0552));height:max(22px, calc(var(--cw)*0.020));
+   * width take a floor. Fidelity loses to hittability here.
+   * HEIGHT: cut to 1/3 at the user's explicit request, to sit visually
+   * embedded in (and in front of, via z-index above) the new #devhat bar
+   * rather than protruding past its top edge -- a starting point for
+   * iteration, not a measured value. This is BELOW the general 44px tap-
+   * target floor established in ADR 0045 for everything else on this page;
+   * flagged here rather than silently overridden, since it was asked for
+   * explicitly and framed as a first pass. */
+  width:max(34px, calc(var(--cw)*0.0552));height:max(7.3px, calc(var(--cw)*0.00667));
   /* Sampled from the top-face photo: cap #c4c4c4 seated in a black slot,
    * raised collar #dcdedd around it. Radius ~0.15 of cap width. */
   background:linear-gradient(#cdcdcd,#c4c4c4);border:1px solid #8e9190;
@@ -98,14 +137,22 @@ button.on{border-color:var(--ok);color:var(--ok)}
   box-shadow:0 -1px 2px #00000026, inset 0 1px 0 #e4e4e4,
              -2px 0 0 #1a1a1a, 2px 0 0 #1a1a1a;
   padding:0;font-size:0;cursor:pointer}
-/* MEASURED from the top-face photo (7_f8c26a68-*.webp), superseding the
+/* Positions below are SUPERSEDED by ADR 0047, at the user's explicit
+ * request, to align with the new #devhat mockup instead of the top-face
+ * photo: BtnRst's left edge now sits at #devlabel's right edge (1.880% +
+ * 21.034% = 22.914%), and BtnG0's left edge at #devsticker's left edge
+ * (68.39%). ADR 0030's measurement below is kept as history, not as the
+ * current value.
+ *
+ * MEASURED from the top-face photo (7_f8c26a68-*.webp), superseding the
  * ordering guess in ADR 0029. That photo is MIRRORED relative to the front
  * view -- the S3A sticker sits at 4.3-30.6% there vs 68.4-97.6% in the front
  * photo, and the CARDPUTER ADV silk reads reversed -- so top-view x maps to
  * front-view as (1 - x). Reading the doc's top-edge order straight into a
- * front view had the two buttons on the wrong sides. See ADR 0030. */
-#topedge #btng0{left:71.1%}
-#topedge #btnrst{left:15.3%}
+ * front view had the two buttons on the wrong sides. See ADR 0030
+ * (original values: btng0 71.1%, btnrst 15.3%). */
+#topedge #btng0{left:68.39%}
+#topedge #btnrst{left:22.914%}
 #topedge .tbtn:hover{background:linear-gradient(#fff,#eee);border-color:var(--accent)}
 #topedge .tbtn:active{transform:translateY(1px)}
 #topedge .tbtn.rst{border-color:#bda29b}
@@ -146,6 +193,13 @@ button.on{border-color:var(--ok);color:var(--ok)}
   background:var(--panel);border:1px solid var(--line);border-radius:8px;
   padding:10px;box-shadow:0 8px 24px #0009;text-align:left}
 #menu[hidden]{display:none}
+/* Same fix as #menu/#shell just above/below: [hidden]'s implicit
+ * display:none loses to .row{display:flex} on a specificity tie, since
+ * author rules beat the UA stylesheet regardless of matching specificity.
+ * Without this override the iPhone-only row rendered on every device --
+ * shipped that way once, caught by testing on a real desktop browser,
+ * not by reading the CSS. */
+#autozoomRow[hidden]{display:none}
 #menu .sect{color:var(--dim);font-size:10px;letter-spacing:.08em;
   text-transform:uppercase;margin:10px 0 6px}
 #menu .sect:first-child{margin-top:0}
@@ -185,9 +239,12 @@ button.on{border-color:var(--ok);color:var(--ok)}
  * so the mockup scales as a rigid unit and cannot drift out of proportion.
  */
 #dev{--cw:min(820px, calc(100vw - 28px));
-  /* Top margin clears the BtnG0/BtnRst tabs, which protrude ABOVE the case
-     top edge and would otherwise be clipped against whatever sits above. */
-  position:relative;margin-top:max(22px, calc(var(--cw)*0.020));width:var(--cw);height:calc(var(--cw)/1.5558);
+  /* Top margin clears whatever protrudes ABOVE the case top edge, so it
+     doesn't get clipped against whatever sits above. Used to be sized to the
+     BtnG0/BtnRst tabs; now sized to #devhat instead, since the tabs shrank to
+     1/3 height (see #topedge .tbtn) and sit embedded within the hat's height
+     rather than sticking out past it -- the hat is the taller of the two. */
+  position:relative;margin-top:max(20px, calc(var(--cw)*0.030));width:var(--cw);height:calc(var(--cw)/1.5558);
   background:linear-gradient(#eceeec 0%,#e5e7e5 38%,#dcdedc 62%,#d3d3d3 100%);
   border-radius:calc(var(--cw)*0.022);
   box-shadow:0 14px 34px #000a, inset 0 1px 0 #fff, inset 0 -2px 4px #0002;
@@ -321,6 +378,9 @@ button.on{border-color:var(--ok);color:var(--ok)}
       <button id="swap">Swap R/B</button>
       <button id="inv">Invert</button>
     </div>
+    <div class="row" id="autozoomRow" hidden>
+      <button id="autozoom" title="On an iPhone in landscape, pop the display out and fill the screen at its native 16:9 -- for reading it hands-free, e.g. mounted in a car. See ADR 0046.">Auto-zoom in landscape</button>
+    </div>
     <div class="sect">Keyboard</div>
     <div class="row">
       <button id="hwkb">Capture my keyboard</button>
@@ -355,6 +415,9 @@ button.on{border-color:var(--ok);color:var(--ok)}
      cost on a stream already budgeted in ms/tile. -->
 <div id="dev">
   <div id="topedge">
+    <div id="devhat" title="1262 HAT — SX1262 LoRa + GNSS (mockup)">
+      <div id="devhatlabel"><span class="gnss">GNSS</span><span class="lora">LoRa</span></div>
+    </div>
     <button class="tbtn" id="btng0" title="BtnG0 — GPIO 0, the only top button firmware can read (M5.BtnA)" aria-label="BtnG0"></button>
     <button class="tbtn rst" id="btnrst" title="BtnRst — drives the EN line, cutting power to the SoC. Physical only." aria-label="BtnRst"></button>
   </div>
@@ -420,6 +483,12 @@ const $=i=>document.getElementById(i);
 // answers false; a laptop trackpad or a desktop mouse answers true. See
 // ADR 0045 for why zoom and keyboard capture are coupled behind this check.
 const isTouch=matchMedia('(pointer:coarse)').matches;
+// iPadOS reports as desktop Safari by default (its UA has no "iPad" in it),
+// so this string match means what it says -- an actual iPhone -- not "any
+// Apple touch device." That's deliberate: ADR 0046's landscape auto-zoom is
+// an iPhone-specific party trick (phone mounted in a car, mirrored to a
+// stereo via AirPlay), not a general tablet feature.
+const isIphone=/iPhone/.test(navigator.userAgent);
 /* Inset <-> popped-out. The canvas ELEMENT MOVES between hosts; it is never
  * cloned and never duplicated. A second live canvas would double the per-frame
  * blit on a stream whose whole design is a millisecond tile budget, and the two
@@ -427,7 +496,22 @@ const isTouch=matchMedia('(pointer:coarse)').matches;
  * Inset, the canvas fills the measured glass rectangle via CSS (width:100%), so
  * the zoom SELECT only applies when popped out. */
 let popped=false;
+// Landscape auto-zoom (ADR 0046) fills available space at the canvas's
+// NATIVE 240x135 ratio -- which is already exactly 16:9, so nothing about
+// the aspect ratio itself needed changing -- instead of using the zoom
+// SELECT's fixed 2x-5x steps. Kept as its own flag rather than overloading
+// `popped`, since auto-fill and manual stepped-zoom are different sizing
+// strategies for the same popped-out state.
+let landscapeFill=false;
+function fitLandscapeCanvas(){
+  const maxW=Math.max(200,(document.documentElement.clientWidth||innerWidth)-32);
+  const maxH=Math.max(120,(innerHeight||800)-40);
+  let w=maxW, h=w*H/W;
+  if(h>maxH){ h=maxH; w=h*W/H; }
+  cv.style.width=w+'px'; cv.style.height=h+'px';
+}
 function zoom(){
+  if(popped && landscapeFill){ fitLandscapeCanvas(); return; }
   const z=+$('zoom').value;
   if(popped){cv.style.width=(W*z)+'px';cv.style.height=(H*z)+'px';}
   else {cv.style.width='';cv.style.height='';}
@@ -455,6 +539,30 @@ $('zoombtn').onclick=()=>{
   if(isTouch) setCapture(on);
 };
 setPopped(false);
+// Landscape auto-zoom (ADR 0046): off by default, iPhone-only, and
+// deliberately NOT wired to setCapture() the way the manual zoom button is
+// (ADR 0045) -- the use case is glancing at a mounted phone while driving,
+// not typing, and popping the iOS keyboard open on every rotation would
+// eat the screen this feature exists to show.
+let autoZoomOn=false;
+const mqLandscape=matchMedia('(orientation:landscape)');
+function applyAutoZoom(){
+  if(!autoZoomOn || !isIphone) return;
+  landscapeFill=mqLandscape.matches;
+  setPopped(mqLandscape.matches);
+}
+if(isIphone){
+  $('autozoomRow').hidden=false;
+  mqLandscape.addEventListener('change',applyAutoZoom);
+  addEventListener('resize',()=>{ if(popped && landscapeFill) fitLandscapeCanvas(); });
+  $('autozoom').onclick=()=>{
+    autoZoomOn=!autoZoomOn;
+    $('autozoom').classList.toggle('on',autoZoomOn);
+    $('autozoom').textContent=autoZoomOn ? 'Auto-zoom in landscape — on' : 'Auto-zoom in landscape';
+    if(autoZoomOn) applyAutoZoom();
+    else landscapeFill=false;  // stop filling; leaves current popped state as-is
+  };
+}
 cx.fillStyle='#000';cx.fillRect(0,0,W,H);
 
 let tiles=0,bytes=0,frames=0,total=0;
