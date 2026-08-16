@@ -55,6 +55,8 @@ directory but aren't part of that comparison.
 | [0039](0039-driver-independent-readback.md) | `SpiReadbackFrameSource` — GRAM readback for hosts without M5Unified/M5GFX | Accepted — implemented, unverified on hardware |
 | [0040](0040-async-webserver-fork.md) | `esp32async/ESPAsyncWebServer` instead of the esphome fork — the esphome fork can't build against an arduino-esp32 3.x core | **Accepted — implemented** |
 | [0041](0041-frame-source-failure-is-not-fatal.md) | A frame source failure doesn't take down remote control — server/WS/key injection no longer depend on `_src->begin()` succeeding | **Accepted — implemented** |
+| [0044](0044-serial-rescan-outran-enumeration.md) | Two ways "is the device actually there?" gave a wrong answer during dev-loop USB checks — a shell-side timing artifact, and a genuinely wedged device that even `system_profiler` missed | Accepted — documented, not yet automated |
+| [0045](0045-mobile-first-and-native-keyboard-capture.md) | Mobile-first pass: real sizing tiers, zoom pops above the case on touch, and typing via the phone's own keyboard through a hidden input | Accepted — implemented, not yet verified on a physical iPhone |
 
 ## Hardware facts these ADRs rest on
 

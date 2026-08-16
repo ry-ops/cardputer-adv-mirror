@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Cardputer ADV Mirror</title>
+<title>ADV Mirror</title>
 <style>
 :root{--bg:#0d1117;--panel:#161b22;--line:#30363d;--fg:#c9d1d9;--dim:#8b949e;--ok:#3fb950;--warn:#d29922;--err:#f85149;--accent:#58a6ff}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px}
-h1{font-size:15px;font-weight:600;margin:0;letter-spacing:.02em}
-.sub{color:var(--dim);font-size:11px;margin-top:-10px}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px}
+h1{font-size:26px;font-weight:700;margin:0;letter-spacing:.01em}
+.sub{color:var(--dim);font-size:13px;margin-top:-6px}
 #shell{background:#1c2128;border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:0 8px 28px #0009}
 canvas{display:block;image-rendering:pixelated;background:#000;border-radius:3px}
 .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:760px}
-button,select{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+button,select{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:9px 14px;font:inherit;font-size:15px;cursor:pointer}
 button:hover{border-color:var(--accent);color:var(--accent)}
 button.on{border-color:var(--ok);color:var(--ok)}
 .stat{display:flex;gap:14px;color:var(--dim);font-size:11px;flex-wrap:wrap;justify-content:center}
@@ -19,6 +19,17 @@ button.on{border-color:var(--ok);color:var(--ok)}
 #kdrop.bad{color:var(--err)}
 #dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--err);vertical-align:middle;margin-right:5px}
 #dot.up{background:var(--ok)}
+/* Mobile-first: everything above this point is the base (small-screen) size.
+ * A mouse-driven, roomier viewport can afford tighter type and controls than
+ * a thumb can reliably hit, so this is the one tier that shrinks things back
+ * down rather than the usual direction of scaling up for more space. */
+@media (min-width:640px){
+  body{font-size:13px}
+  h1{font-size:16px;font-weight:600;letter-spacing:.02em}
+  .sub{font-size:11px;margin-top:-8px}
+  button,select{padding:5px 10px;font-size:12px}
+  #capbadge{font-size:11px;padding:4px 8px}
+}
 #kb{display:grid;gap:0;background:#dcdcdc;border:1px solid #b9b9b9;border-radius:9px;padding:9px 8px 7px;width:max-content;max-width:100%;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif}
 /* A physical ADV key is TWO parts, which is the layout fact I had been missing:
  * the legend is printed on the CASE -- forming a continuous light bar across the
@@ -118,15 +129,19 @@ button.on{border-color:var(--ok);color:var(--ok)}
  * in the bar is what you must see WITHOUT clicking: connection state, zoom,
  * frame budget, and any mode that changes what your physical keyboard does.
  */
-.menuwrap{position:relative;display:inline-block}
-#menubtn{font-size:15px;line-height:1;padding:4px 9px}
+.menuwrap{position:fixed;left:16px;top:16px;z-index:60}
+/* 44x44 is Apple's own minimum tap target (Human Interface Guidelines); the
+ * old 15px/4px9px button measured well under that. Left large at every
+ * breakpoint on purpose -- a bigger hit target costs a mouse user nothing. */
+#menubtn{font-size:20px;line-height:1;min-width:44px;min-height:44px;
+  display:inline-flex;align-items:center;justify-content:center;padding:0}
 #menubtn.open{border-color:var(--accent);color:var(--accent)}
 /* Height: the panel is ~270px of content, which clips below the fold on a
  * 568px-tall phone. Cap it to the viewport and scroll rather than letting the
  * Stream numbers fall off the bottom edge with no indication they exist.
- * Width: 250px fixed can overhang the left edge on a ~320px screen, since the
- * panel grows leftward from the button; clamp it to the viewport. */
-#menu{position:absolute;right:0;top:calc(100% + 6px);z-index:50;width:250px;
+ * Width: 250px fixed can overhang the right edge on a ~320px screen, since the
+ * panel grows rightward from the button; clamp it to the viewport. */
+#menu{position:absolute;left:0;top:calc(100% + 6px);z-index:50;width:250px;
   max-width:calc(100vw - 24px);max-height:calc(100vh - 140px);overflow-y:auto;
   background:var(--panel);border:1px solid var(--line);border-radius:8px;
   padding:10px;box-shadow:0 8px 24px #0009;text-align:left}
@@ -144,9 +159,19 @@ button.on{border-color:var(--ok);color:var(--ok)}
 #menu .mstat b{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
 /* Modal-state badge: capture rewires the user's PHYSICAL keyboard, so it must
  * be visible with the menu shut. Hidden until active. */
-#capbadge{display:none;align-items:center;gap:5px;font-size:11px;
-  color:var(--ok);border:1px solid var(--ok);border-radius:6px;padding:4px 8px}
+#capbadge{display:none;align-items:center;gap:5px;font-size:13px;
+  color:var(--ok);border:1px solid var(--ok);border-radius:6px;padding:6px 10px}
 #capbadge.on{display:inline-flex}
+/* iOS only shows an on-screen keyboard, and only dispatches key/input events
+ * at all, once a real editable element has focus -- there is no DOM event to
+ * listen for otherwise. This is that element: visually hidden (opacity, not
+ * display:none/visibility:hidden, which would make it unfocusable), excluded
+ * from Tab order and AT since it carries no visible meaning of its own, and
+ * held at 16px so FOCUSING it doesn't trigger iOS's auto-zoom-on-focus (that
+ * check reads computed font-size regardless of the element's own visibility).
+ * See ADR 0045. */
+#mkbInput{position:fixed;top:0;left:0;width:1px;height:1px;padding:0;margin:0;
+  border:0;opacity:0;font-size:16px;pointer-events:none}
 /* ---- Cardputer ADV mockup -------------------------------------------------
  * Every proportion is MEASURED from the product photo (1200x1200 front-on),
  * not styled by eye. Case bbox 851x547 -> aspect 1.5558. Fractions of case:
@@ -284,8 +309,46 @@ button.on{border-color:var(--ok);color:var(--ok)}
   font:600 calc(var(--cw)*0.016)/1 ui-monospace,monospace;letter-spacing:.08em}
 #shell[hidden]{display:none}
 </style></head><body>
-<h1>M5Stack Cardputer ADV — Display Mirror</h1>
+<span class="menuwrap">
+  <button id="menubtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu" title="Display, capture and diagnostics">☰</button>
+  <div id="menu" hidden role="menu" aria-label="Display and diagnostics">
+    <div class="sect">Display</div>
+    <div class="row">
+      <button id="full">Full refresh</button>
+      <button id="shot">Save PNG</button>
+    </div>
+    <div class="row">
+      <button id="swap">Swap R/B</button>
+      <button id="inv">Invert</button>
+    </div>
+    <div class="sect">Keyboard</div>
+    <div class="row">
+      <button id="hwkb">Capture my keyboard</button>
+    </div>
+    <div class="row">
+      <button id="sweep">Test all 56 keys</button>
+    </div>
+    <div class="sect">Stream</div>
+    <div class="mstat">
+      <span>fps</span><b id="fps">0</b>
+      <span>tiles/s</span><b id="tps">0</b>
+      <span>KiB/s</span><b id="kbs">0</b>
+      <span>tiles</span><b id="tot">0</b>
+      <span>self-test</span><b id="st">—</b>
+      <span>keys sent</span><b id="ksent">0</b>
+      <span>keys dropped</span><b id="kdrop">0</b>
+      <span>coverage</span><b id="kcov">0/56</b>
+    </div>
+  </div>
+</span>
+<input id="mkbInput" type="text" tabindex="-1" aria-hidden="true"
+  autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+<h1>ADV Mirror</h1>
 <div class="sub">ADR 0002 · GRAM readback · 240×135 RGB565</div>
+<!-- #shell precedes #dev in DOM order (ADR 0045) so that when zoom pops the
+     canvas out, it renders ABOVE the case mockup instead of below it --
+     that's the reachable spot on a phone screen once the keyboard is up. -->
+<div id="shell" hidden></div>
 <!-- Mockup. Proportions measured from the product photo -- see ADR 0028.
      The canvas MOVES between #devscreen (inset) and #shell (zoomed out); it is
      never duplicated, because two live canvases would double per-frame draw
@@ -318,7 +381,6 @@ button.on{border-color:var(--ok);color:var(--ok)}
   <button id="zoombtn" title="Pop the display out of the case, and back">zoom</button>
   <div id="devkb"><div id="kb"></div></div>
 </div>
-<div id="shell" hidden></div>
 <!-- The visible bar holds only what you cannot afford to click for: link
      state, zoom, the frame budget (it changes what you are watching), and the
      capture badge, because capture rewires the user's PHYSICAL keyboard and a
@@ -333,38 +395,6 @@ button.on{border-color:var(--ok);color:var(--ok)}
     <option value="20000">Aggressive (20ms)</option>
   </select>
   <span id="capbadge">⌨ capturing keys<button id="capoff" style="padding:1px 6px;font-size:11px">stop</button></span>
-  <span class="menuwrap">
-    <button id="menubtn" aria-haspopup="true" aria-expanded="false" aria-controls="menu" title="Display, capture and diagnostics">☰</button>
-    <div id="menu" hidden role="menu" aria-label="Display and diagnostics">
-      <div class="sect">Display</div>
-      <div class="row">
-        <button id="full">Full refresh</button>
-        <button id="shot">Save PNG</button>
-      </div>
-      <div class="row">
-        <button id="swap">Swap R/B</button>
-        <button id="inv">Invert</button>
-      </div>
-      <div class="sect">Keyboard</div>
-      <div class="row">
-        <button id="hwkb">Capture my keyboard</button>
-      </div>
-      <div class="row">
-        <button id="sweep">Test all 56 keys</button>
-      </div>
-      <div class="sect">Stream</div>
-      <div class="mstat">
-        <span>fps</span><b id="fps">0</b>
-        <span>tiles/s</span><b id="tps">0</b>
-        <span>KiB/s</span><b id="kbs">0</b>
-        <span>tiles</span><b id="tot">0</b>
-        <span>self-test</span><b id="st">—</b>
-        <span>keys sent</span><b id="ksent">0</b>
-        <span>keys dropped</span><b id="kdrop">0</b>
-        <span>coverage</span><b id="kcov">0/56</b>
-      </div>
-    </div>
-  </span>
 </div>
 
 <!-- The ADV's top face carries controls that appear in NO front-on photo of the
@@ -385,6 +415,11 @@ cx.imageSmoothingEnabled=false;
 let W=240,H=135,TW=60,TH=45,COLS=4;
 let img=cx.createImageData(TW,TH);
 const $=i=>document.getElementById(i);
+// Coarse pointer = touch, no reliable hover -- the signal this page uses to
+// decide "does this visitor have a hardware keyboard already." A phone/tablet
+// answers false; a laptop trackpad or a desktop mouse answers true. See
+// ADR 0045 for why zoom and keyboard capture are coupled behind this check.
+const isTouch=matchMedia('(pointer:coarse)').matches;
 /* Inset <-> popped-out. The canvas ELEMENT MOVES between hosts; it is never
  * cloned and never duplicated. A second live canvas would double the per-frame
  * blit on a stream whose whole design is a millisecond tile budget, and the two
@@ -408,7 +443,17 @@ function setPopped(on){
   zoom();
 }
 $('zoom').onchange=zoom;
-$('zoombtn').onclick=()=>setPopped(!popped);
+// On touch, zoom and keyboard capture are one action: the whole point of
+// popping the display out on a phone is to type into it, and hunting down a
+// second control to enable that separately just loses the visitor between
+// the two steps. Desktop keeps them independent, same as always -- a mouse
+// user clicking zoom to look closer should not also start eating their
+// physical keystrokes.
+$('zoombtn').onclick=()=>{
+  const on=!popped;
+  setPopped(on);
+  if(isTouch) setCapture(on);
+};
 setPopped(false);
 cx.fillStyle='#000';cx.fillRect(0,0,W,H);
 
@@ -749,6 +794,15 @@ const ARROW={ArrowUp:';',ArrowDown:'.',ArrowLeft:',',ArrowRight:'/'};
 // silently wrong the moment the vendor moves a key.
 const byLabel={};
 if(window.KEYMAP) window.KEYMAP.forEach(r=>r.forEach(k=>{byLabel[k.lo]={r:k.r,c:k.c,shift:false}}));
+// Shared by both capture paths below (physical keydown, and the mobile
+// hidden-input relay) so a coordinate lookup only has one call site to send
+// through -- see ADR 0045.
+function sendSpec(spec){
+  if(!spec) return false;
+  noteSent(spec.r,spec.c, send({t:'key',r:spec.r,c:spec.c,shift:spec.shift,fn:false}));
+  return true;
+}
+const mkbInput=$('mkbInput');
 let hwCapture=false;
 function setCapture(on){
   hwCapture=on;
@@ -757,9 +811,35 @@ function setCapture(on){
   // The badge lives OUTSIDE the menu on purpose: this mode swallows the user's
   // real keystrokes, so its state must survive the menu closing.
   $('capbadge').classList.toggle('on',on);
+  // A touch device has no physical keyboard for the block below to capture
+  // keydown from. Route capture through the hidden input instead: focusing it
+  // is what makes iOS show its own keyboard and start dispatching key/input
+  // events at all. Blurring on stop dismisses that keyboard again.
+  if(isTouch){ if(on) mkbInput.focus(); else mkbInput.blur(); }
 }
 $('hwkb').onclick=()=>setCapture(!hwCapture);
 $('capoff').onclick=e=>{e.stopPropagation();setCapture(false)};
+// Mobile relay: Backspace/Enter/Tab/arrows still arrive as real keydown even
+// from iOS's on-screen keyboard once mkbInput has focus, so they're handled
+// exactly like the physical path below. Ordinary characters are NOT -- iOS's
+// autocorrect/predictive layer can insert or rewrite text between keystrokes,
+// so those are read from the resulting `input` value instead of trusted from
+// keydown, then the field is cleared so next time only sees what's new.
+mkbInput.addEventListener('keydown',e=>{
+  if(!hwCapture || e.isComposing) return;
+  let spec=null;
+  if(e.key in ARROW)           spec=byChar[ARROW[e.key]];
+  else if(e.key==='Enter')     spec=byLabel['enter'];
+  else if(e.key==='Backspace') spec=byLabel['del'];
+  else if(e.key==='Tab')       spec=byLabel['tab'];
+  else return;                 // ordinary characters fall through to 'input'
+  if(sendSpec(spec)) e.preventDefault();
+});
+mkbInput.addEventListener('input',e=>{
+  if(!hwCapture || e.isComposing) return;
+  for(const ch of e.target.value) sendSpec(byChar[ch]);
+  e.target.value='';
+});
 
 /* Hamburger. Closes on outside click and on Escape -- a menu that only closes
  * by re-clicking its own button strands itself over the keyboard, which is the
@@ -781,8 +861,12 @@ addEventListener('keydown',e=>{
   if(e.key==='Escape' && !hwCapture && !menu.hidden){setMenu(false)}
 });
 addEventListener('keydown',e=>{
-  if(!hwCapture) return;
-  let spec=null, fn=false;
+  // mkbInput has its own keydown+input listeners (above) which are the only
+  // handlers for anything typed there. Without this guard, every keystroke
+  // bubbling up from it past this document-level listener would be sent
+  // TWICE -- once from mkbInput's own handler, once from this one.
+  if(!hwCapture || e.target===mkbInput) return;
+  let spec=null;
   // The ADV's arrow keys are DEDICATED keys, silkscreened with arrows, that
   // report as ; , . / -- an inverted-T at (2,11)/(3,10)/(3,11)/(3,12). They are
   // NOT an fn chord. Sending fn=true here fabricated a modifier the hardware
@@ -793,9 +877,7 @@ addEventListener('keydown',e=>{
   else if(e.key==='Backspace') spec=byLabel['del'];
   else if(e.key==='Tab')       spec=byLabel['tab'];
   else if(e.key.length===1)    spec=byChar[e.key];
-  if(!spec) return;
-  e.preventDefault();
-  noteSent(spec.r,spec.c, send({t:'key',r:spec.r,c:spec.c,shift:spec.shift,fn:fn}));
+  if(sendSpec(spec)) e.preventDefault();
 });
 
 </script></body></html>

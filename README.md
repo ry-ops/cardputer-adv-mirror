@@ -18,6 +18,10 @@ Implements **ADR 0002** (non-invasive GRAM readback) with key injection on top.
   hit **Capture my keyboard** and use your real one — every key (arrows
   included) lands on the exact matrix coordinate a physical press would use,
   so the firmware can't tell the difference.
+- **Mobile-first, and typeable on a phone.** The page is sized for touch by
+  default, not shrunk desktop chrome. On a phone, **zoom** pops the display
+  up above the case *and* focuses a hidden input that summons your own
+  on-screen keyboard in one tap — see [ADR 0045](docs/adr/0045-mobile-first-and-native-keyboard-capture.md).
 - **Cuts the cable entirely.** Flash once over USB, then the ADV mirrors *and*
   takes input on WiFi alone — across the room, on battery. Two real bugs (WiFi
   modem sleep, a keystroke counter that lied) used to make control look
@@ -32,7 +36,7 @@ Implements **ADR 0002** (non-invasive GRAM readback) with key injection on top.
   set by the SPI bus itself.
 - **Actually verified, not just claimed.** A fuzzed codec (600 trials, 0
   failures) cross-checked against the shipped browser decoder, an automated
-  keyboard-coverage test suite, and 38 ADRs documenting every bug found along
+  keyboard-coverage test suite, and 45 ADRs documenting every bug found along
   the way — including the wrong turns.
 - **Free.** MIT licensed. No app, no account, no cloud — everything runs on
   the device and in your browser.
@@ -170,7 +174,7 @@ prints the address on its own screen either way.
 ## Layout
 
 ```
-docs/adr/            ADR 0001-0037 — every decision, including the wrong ones
+docs/adr/            ADR 0001-0045 — every decision, including the wrong ones
 lib/CardputerMirror/ Mirror, IFrameSource, ReadbackFrameSource, RLE codec
 web/index.html       Browser client (canvas + 4x14 ADV keyboard) — a template
 tools/               Asset generator, MCP server, test suite, codec fuzzer

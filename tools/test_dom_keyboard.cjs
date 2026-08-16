@@ -77,6 +77,12 @@ const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true
     w.HTMLCanvasElement.prototype.getContext = function () { return stubCtx(); };
     w.WebSocket = class { constructor() { this.readyState = 0; } send() {} close() {} addEventListener() {} };
     w.requestAnimationFrame = cb => setTimeout(() => cb(0), 0);
+    // jsdom has no layout engine, so it has no concept of pointer type either
+    // (ADR 0045's isTouch check). Fixed 'false': every assertion below is
+    // exercising the desktop/physical-keyboard capture path, not the mobile
+    // hidden-input relay, so a real (non-coarse) pointer is the correct answer
+    // here, not just the only one jsdom can give.
+    w.matchMedia = () => ({ matches: false });
   }});
 
 const doc = dom.window.document;
