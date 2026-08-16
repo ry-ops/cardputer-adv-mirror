@@ -55,17 +55,31 @@ Browse to the IP printed on the device screen.
 > [ADR 0037](docs/adr/0037-control-over-wifi.md); see **Control over WiFi** below.
 
 ![The browser page mirroring a connected Cardputer ADV, with the on-screen keyboard below and the zoom button on the case](docs/images/app-running.png)
-*The full browser page: mirrored display, on-screen keyboard, and connection status — live against a real device (`connected`, `2 clients`, `3x`, `Normal (4.5ms)`).*
+*The full browser page (ADR 0045's mobile-first pass): "ADV Mirror" title,
+the hamburger menu fixed top-left, mirrored System screen, on-screen
+keyboard, and connection status — live against a real device (`connected`,
+`3x`, `Normal (4.5ms)`).*
 
 The browser page renders the mirrored display alongside a full on-screen
 keyboard matching the ADV's physical 4x14 layout — click keys directly to send
 them to the device. Prefer typing on your own keyboard? Click **Capture my
 keyboard** to toggle passthrough: real keypresses (including arrow keys) are
 mapped through the same matrix coordinates a physical press would use, so the
-firmware can't tell the difference.
+firmware can't tell the difference. On a phone, **zoom** does this for you in
+one tap — see **Mobile-first, and typeable on a phone** above.
 
-![The mirrored display popped out of the case and zoomed in, showing the on-device menu at 3x scale](docs/images/zoom.png)
-*Click **zoom** to pop the display out of the case mockup and scale it up (2x-5x) — useful for reading the on-device menu, shown here on the Key Test screen.*
+![The hamburger menu open, showing Display controls, keyboard capture, and live stream stats](docs/images/menu.png)
+*Occasional controls and streaming diagnostics live behind the hamburger
+(ADR 0027) — Display (full refresh, save PNG, swap R/B, invert), Keyboard
+(capture toggle, 56-key test sweep), and live Stream stats (fps, tiles/s,
+KiB/s, keys sent/dropped, coverage).*
+
+![The mirrored display popped out of the case and zoomed in, now rendered above the case mockup instead of beside it](docs/images/zoom.png)
+*Click **zoom** to pop the display out of the case mockup and scale it up
+(2x-5x) — as of ADR 0045 it renders ABOVE the case, not below, so it stays
+reachable once an on-screen keyboard has taken over the bottom of a phone
+screen. The case's own glass shows a "zoomed out" placeholder, with **inset**
+to bring the canvas back.*
 
 ## Control over WiFi
 
